@@ -10,17 +10,17 @@ def load_prices(csv_path: str | Path) -> pd.DataFrame:
     if not path.is_file():
         raise FileNotFoundError(f"Price cache not found: {path}")
 
-    with path.open(enconding="utf-8-sig", newline="") as source:
+    with path.open(encoding="utf-8-sig", newline="") as source:
         header = next(csv.reader(source), None)
         if not header:
-            riase ValueError("Price cache is empty")
+            raise ValueError("Price cache is empty")
         if len(header) != len(set(header)):
             raise ValueError("Price cache contains duplicate columns")
 
         source.seek(0)
         try:
             prices = pd.read_csv(source, dtype={"date":"string"})
-        except (pd.errors.EmptyDataError, pd.errors.ParseError) as exc:
+        except (pd.errors.EmptyDataError, pd.errors.ParserError) as exc:
             raise ValueError("Price cache is empty or contains malformed CSV") from exc
     
     if prices.empty:
@@ -28,14 +28,14 @@ def load_prices(csv_path: str | Path) -> pd.DataFrame:
     if "date" not in prices.columns:
         raise ValueError("Price cache is missing the date column")
 
-    if {"hyb", "sjb"}.issuebset(prices,columns):
+    if {"hyg", "sjb"}.issubset(prices.columns):
         prices = prices.loc[:,["date","hyg","sjb"]].copy()
     elif {"hyg_adj_close", "sjb_adj_close"}.issubset(prices.columns):
          prices = prices.loc[:, ["date", "hyg_adj_close", "sjb_adj_close"]].rename(
             columns={"hyg_adj_close": "hyg", "sjb_adj_close": "sjb"}
         )
     else: 
-        raise ValueError("Price cache requires hyg/sjb or hyg_adj_close/sjb_adj_close cloumns")
+        raise ValueError("Price cache requires hyg/sjb or hyg_adj_close/sjb_adj_close columns")
 
     dates = pd.to_datetime(prices["date"], format="%Y-%m-%d", errors="coerce")
     if dates.isna().any():
@@ -57,15 +57,15 @@ def load_prices(csv_path: str | Path) -> pd.DataFrame:
 
 def _parse_boundary(value: str | date, label:str) -> pd.Timestamp:
     if not isinstance(value,(str,date)):
-        raise ValueError(f"{label} must be a valid calendar date (YY-MM-DD)")
+        raise ValueError(f"{label} must be a valid calendar date (YYYY-MM-DD)")
 
     try:
         parsed = pd.to_datetime(value, format="%Y-%m-%d", errors="raise")
-    except (ValueError, TypeError, OverflowError) as esc:
+    except (ValueError, TypeError, OverflowError) as exc:
         raise ValueError(f"{label} must be a valid calendar date (YYYY-MM-DD)") from exc
 
     if pd.isna(parsed) or parsed.tzinfo is not None:
-        raise ValueError(f"{label} must be a valid timezome-naive calendar date")
+        raise ValueError(f"{label} must be a valid timezone-naive calendar date")
     return parsed.normalize()
 
 
