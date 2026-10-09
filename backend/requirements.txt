@@ -1,0 +1,13 @@
+# API server and request validation
+fastapi
+uvicorn
+pydantic
+
+# Historical market data and numerical analysis
+pandas
+numpy
+yfinance
+
+# Backend and API Testing
+pytest
+httpx
