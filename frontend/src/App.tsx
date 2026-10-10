@@ -87,6 +87,8 @@ export default function App() {
 
   const meta = useResource('metadata', () => api.getMetadata())
   const scenarios = useResource('scenarios', () => api.getScenarios())
+  const synthetic = meta.data?.is_synthetic ?? api.mode === 'mock'
+  const dataLabel = meta.data ? (synthetic ? 'Synthetic data' : 'Cached market data') : 'Connecting to data'
 
   const { request, errors } = validateForm(form, meta.data)
   const simKey = useDebounced(request ? JSON.stringify(request) : null, 250)
@@ -191,8 +193,8 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <Badge tone="warn">Synthetic data</Badge>
-          <span>{meta.data ? `${meta.data.first_date.slice(0, 4)}–${meta.data.last_date.slice(0, 4)} · ${meta.data.data_version}` : '—'}</span>
+          <Badge tone={synthetic ? 'warn' : 'accent'}>{dataLabel}</Badge>
+          <span title={meta.data?.data_version}>{meta.data ? `${meta.data.first_date.slice(0, 4)}–${meta.data.last_date.slice(0, 4)} · ${meta.data.data_version.slice(0, 19)}` : '—'}</span>
         </div>
       </aside>
       <button type="button" className="scrim" aria-label="Close navigation" onClick={() => setNavOpen(false)} tabIndex={navOpen ? 0 : -1} />
@@ -218,14 +220,16 @@ export default function App() {
             {usesSimulation && (
               <span className={`status ${updating ? 'busy' : hasErrors ? 'warn' : 'ok'}`} role="status">
                 <span className="dot" aria-hidden="true" />
-                {updating ? 'Updating…' : hasErrors ? 'Inputs need attention' : 'Results current'}
+                {updating ? 'Updating…' : hasErrors ? 'Inputs need attention' : sim.error ? 'Request failed' : sim.data ? 'Results current' : 'Connecting'}
               </span>
             )}
-            <Badge tone="warn">Illustrative · not market data</Badge>
+            <Badge tone={synthetic ? 'warn' : 'accent'}>{synthetic ? 'Illustrative · not market data' : 'Historical · cached prices'}</Badge>
           </div>
         </header>
 
         <main className="content" id="content">
+          {meta.error && <ErrorState message={`Metadata: ${meta.error}`} onRetry={meta.retry} />}
+          {scenarios.error && <ErrorState message={`Scenarios: ${scenarios.error}`} onRetry={scenarios.retry} />}
           {showControls && (
             <section className="controls panel">
               <SimulationForm
@@ -249,8 +253,9 @@ export default function App() {
           {body}
 
           <footer className="disclaimer">
-            <strong>Historical analysis on synthetic data.</strong> All figures are generated from a deterministic simulated
-            dataset for demonstration and are not actual HYG or SJB prices. Past performance, real or simulated, does not
+            <strong>{synthetic ? 'Illustrative analysis on synthetic data.' : 'Historical analysis using cached adjusted prices.'}</strong>{' '}
+            {synthetic ? 'The dataset is simulated and does not contain actual HYG or SJB prices. ' : 'HYG is a proxy for the restricted book; costs and financing are simplified. '}
+            Past performance, real or simulated, does not
             indicate future results. Nothing here is investment advice or a recommendation to trade any security.
           </footer>
         </main>

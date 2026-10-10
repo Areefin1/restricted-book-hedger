@@ -7,6 +7,8 @@ import pytest
 from app.hedger.data import load_prices, select_date_range
 from app.hedger.hedge import simulate_hedges
 
+STRATEGIES = ["unhedged", "static_short_hedged", "sjb_hedged"]
+
 
 @pytest.fixture
 def prices():
@@ -21,10 +23,14 @@ def test_known_paths_start_at_book_size_and_keep_fixed_positions(prices):
     results = simulate_hedges(prices, 100_000, 0.5)
 
     np.testing.assert_allclose(
-        results.to_numpy(),
+        results[STRATEGIES].to_numpy(),
         [[100_000, 100_000, 100_000], [90_000, 95_000, 94_000], [99_000, 99_500, 98_500]],
     )
-    assert list(results.columns) == ["unhedged", "static_short_hedged", "sjb_hedged"]
+    assert list(results.columns) == STRATEGIES + [f"{s}_pnl" for s in STRATEGIES]
+    np.testing.assert_allclose(
+        results[[f"{s}_pnl" for s in STRATEGIES]],
+        [[0, 0, 0], [-10_000, -5_000, -6_000], [-1_000, -500, -1_500]],
+    )
     pd.testing.assert_index_equal(results.index, prices.index)
     pd.testing.assert_frame_equal(prices, original)
 
@@ -33,11 +39,14 @@ def test_zero_hedge_matches_unhedged_even_with_borrow_rate(prices):
     results = simulate_hedges(prices, 100_000, 0, 0.02)
     np.testing.assert_allclose(results["unhedged"], results["static_short_hedged"])
     np.testing.assert_allclose(results["unhedged"], results["sjb_hedged"])
+    np.testing.assert_allclose(results["unhedged_pnl"], results["static_short_hedged_pnl"])
+    np.testing.assert_allclose(results["unhedged_pnl"], results["sjb_hedged_pnl"])
 
 
 def test_full_static_hedge_is_flat_before_costs(prices):
     results = simulate_hedges(prices, 100_000, 1)
     np.testing.assert_allclose(results["static_short_hedged"], 100_000)
+    np.testing.assert_allclose(results["static_short_hedged_pnl"], 0, atol=1e-9)
 
 
 def test_borrow_cost_uses_initial_exposure_and_calendar_days(prices):
@@ -50,6 +59,23 @@ def test_borrow_cost_uses_initial_exposure_and_calendar_days(prices):
     )
     pd.testing.assert_series_equal(free["unhedged"], charged["unhedged"])
     pd.testing.assert_series_equal(free["sjb_hedged"], charged["sjb_hedged"])
+    for strategy in STRATEGIES:
+        np.testing.assert_allclose(charged[f"{strategy}_pnl"], charged[strategy] - 100_000)
+    np.testing.assert_allclose(
+        free["static_short_hedged_pnl"] - charged["static_short_hedged_pnl"], expected_costs
+    )
+
+
+def test_pnl_reports_gains_separately_from_total_value():
+    rising = pd.DataFrame(
+        {"hyg": [100.0, 110.0], "sjb": [50.0, 46.0]},
+        index=pd.date_range("2022-01-03", periods=2, name="date"),
+    )
+    results = simulate_hedges(rising, 100_000, 0.5)
+    np.testing.assert_allclose(results.iloc[-1][STRATEGIES], [110_000, 105_000, 106_000])
+    np.testing.assert_allclose(
+        results.iloc[-1][[f"{s}_pnl" for s in STRATEGIES]], [10_000, 5_000, 6_000]
+    )
 
 
 def test_loader_selection_and_simulation_work_together(tmp_path):
@@ -61,7 +87,7 @@ def test_loader_selection_and_simulation_work_together(tmp_path):
     )
     selected = select_date_range(load_prices(path), "2022-01-01", "2022-01-04")
     results = simulate_hedges(selected, 100_000, 0.5)
-    np.testing.assert_allclose(results.iloc[-1], [90_000, 95_000, 94_000])
+    np.testing.assert_allclose(results.iloc[-1], [90_000, 95_000, 94_000, -10_000, -5_000, -6_000])
 
 
 @pytest.mark.parametrize(

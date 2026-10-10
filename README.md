@@ -1,275 +1,110 @@
 # Restricted Book Hedger
 
-A web application for exploring how different hedges would have protected a restricted high-yield bond portfolio during historical market periods.
+A working React/FastAPI research demo comparing an HYG-proxy bond book with a fixed initial short hedge and a buy-and-hold SJB hedge. It includes portfolio paths and P/L, drawdown/risk views, three historical presets, daily regression diagnostics, rolling-window research, and an in-sample hedge-ratio search.
 
-The app compares an unhedged portfolio, a static short hedge, and an inverse ETF hedge. It uses historical HYG and SJB data to display portfolio performance, risk metrics, and the tradeoffs between the two hedge approaches.
+Educational historical analysis. HYG is a proxy, financing and trading costs are simplified, and the app does not execute trades or determine whether a hedge is permissible for a restricted portfolio.
 
-> Educational research prototype. Historical simulations are not forecasts or investment advice. Any real hedge requires independent investment, legal, and compliance review.
+## Run the demo
 
-## The problem
-
-Credit funds participating in corporate restructurings may receive confidential information that restricts their ability to trade particular securities. While their holdings remain restricted, they can still be exposed to market declines.
-
-This project explores whether a separate broad-market hedge could reduce that exposure. It models the restricted portfolio using HYG as a proxy and compares two historical hedge strategies.
-
-## The strategies
-
-| Strategy | How the prototype models it |
-| --- | --- |
-| Unhedged | A starting bond portfolio whose returns follow HYG |
-| Static short | A fixed initial short exposure to HYG, with an explicit borrowing-cost assumption |
-| Inverse ETF | A fixed initial investment in SJB, held over the selected period |
-
-HYG is a high-yield corporate bond ETF. SJB is an inverse ETF targeting the opposite of its benchmark's daily performance. Its multi-day return can differ from simply reversing HYG's cumulative return.
-
-The portfolio proxy and short accounting are simplifying assumptions. The app does not model an actual institution's individual bonds or execute trades.
-
-## Features
-
-### Hedge Simulator
-
-Enter a portfolio value, hedge ratio, and historical date range. Compare:
-
-- Daily paths for all three portfolio strategies.
-- Final dollar profit or loss and percentage return.
-- Maximum drawdown: the largest decline from a previous portfolio peak.
-- Explicit cost and capital-accounting assumptions.
-
-Planned scenario presets include the COVID market shock, the 2022 decline, and a documented choppy period. Exact dates should be validated against the available dataset.
-
-### Convexity Test
-
-Explore rolling 63-trading-day windows to compare HYG and SJB returns. A scatter chart colors windows by realized volatility and includes a static-short reference line.
-
-A daily-return sanity check also examines how closely SJB moves inversely to HYG.
-
-### Historical Hedge-Ratio Search — Optional
-
-Compare candidate hedge ratios under a defined historical risk objective. Display the selected ratio, evaluation period, candidate results, and costs.
-
-The result is a historical optimization, not a universally optimal hedge. Selection and evaluation on the same history must be labeled in-sample.
-
-## Research motivation
-
-The original proposal draws inspiration from *In Defense of Leveraged and Inverse Funds*, attributed in the proposal to Jennifer N. Carpenter, Fangzhou Lu, and Robert F. Whitelaw, dated August 18, 2026.
-
-The project investigates the proposal's hypothesis about daily resetting and path-dependent payoffs using high-yield bond ETF data. It should report what the data shows, including findings that disagree with the hypothesis.
-
-The paper's bibliographic details, publication status, theoretical formulas, and applicability to these funds must be verified before including a theoretical overlay or claiming a formal replication.
-
-## Tech stack
-
-| Layer | Tools |
-| --- | --- |
-| Frontend | React, Vite, TypeScript |
-| Charts | Plotly with a React integration |
-| Backend API | Python, FastAPI, Uvicorn |
-| Analysis | pandas, NumPy |
-| Market data | yfinance with cached CSV files |
-| Backend verification | pytest |
-
-## How it works
-
-1. A separate download script retrieves historical HYG and SJB prices.
-2. The backend aligns the series on shared trading dates and caches adjusted prices.
-3. A user enters simulation parameters in React.
-4. React sends a JSON request to FastAPI.
-5. Python selects the date range and calculates portfolio paths and risk metrics.
-6. FastAPI returns JSON; React renders charts and summaries.
-
-Market data is reused across requests rather than downloaded for every simulation.
-
-## Inputs
-
-| Input | Meaning |
-| --- | --- |
-| Book size | Starting dollar value of the modeled bond portfolio |
-| Hedge ratio | Initial hedge exposure divided by book size; 0.6 means 60% |
-| Start and end dates | Historical period to simulate |
-| Annual borrow rate | Assumed yearly borrowing rate for the static short |
-| Scenario preset | A shortcut that selects a documented date range |
-
-A hedge ratio describes initial exposure, not a guaranteed percentage reduction in losses.
-
-## Proposed project structure
-
-The following is the intended layout. This README does not imply that every component has already been implemented.
-
-```text
-restricted-book-hedger/
-    README.md
-    frontend/
-        package.json
-        src/
-            App.tsx
-            api/
-            components/
-            features/
-                simulator/
-                research/
-                recommendation/
-    backend/
-        requirements.txt
-        app/
-            main.py
-            config.py
-            routes/
-            schemas/
-            hedger/
-                data.py
-                hedge.py
-                metrics.py
-                scenarios.py
-                sanity.py
-                convexity.py
-                recommend.py
-        data/
-            hyg.csv
-            sjb.csv
-            prices.csv
-            metadata.json
-        scripts/
-            download_prices.py
-        tests/
-    docs/
-        team-plan.md
-        api-contract.md
-        methodology.md
-        demo-script.md
-```
-
-## Local development
-
-These instructions assume the proposed frontend and backend have been scaffolded. Run the frontend and backend in separate terminals.
-
-### Backend
-
-From the repository root:
+Verified development environment: Python 3.13, Node.js 24, npm 11. Install dependencies once from the repository root:
 
 ```powershell
-cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python scripts/download_prices.py
-python -m uvicorn app.main:app --reload --port 8000
+python -m pip install -r backend/requirements.txt
+npm --prefix frontend ci
 ```
 
-On macOS or Linux, activate the environment using:
+On macOS/Linux, activate with `source .venv/bin/activate` instead.
 
-```bash
-source .venv/bin/activate
-```
-
-Skip the download command if a validated cache is already available.
-
-Backend address: http://localhost:8000  
-FastAPI documentation, when enabled: http://localhost:8000/docs
-
-### Frontend
-
-From the repository root in another terminal:
+Start the complete demo:
 
 ```powershell
-cd frontend
-npm install
-npm run dev
+python scripts/demo.py
 ```
 
-Open the address printed by Vite.
+Open **http://127.0.0.1:8000**. This builds React and serves its assets and the API from one Python process. Stop with Ctrl+C. The checked-in historical cache is used; no data download is required. After the first build, this command also works without an internet connection:
 
-Create frontend/.env.local with:
-
-```dotenv
-VITE_API_BASE_URL=http://localhost:8000
+```powershell
+python scripts/demo.py --skip-build
 ```
 
-The frontend API client must read this variable. Configure the backend to allow the actual frontend origin through CORS. Frontend environment values are public; store credentials and secrets only on the backend.
+Use `--port 8001` if port 8000 is occupied. A custom frontend `.env.local` must leave `VITE_API_BASE_URL` blank and `VITE_USE_MOCK=false` for the single-server demo. Environment changes require rebuilding.
 
-## Data
+## Develop with hot reload
 
-Download daily historical prices for HYG and SJB using the same adjustment convention. Keep the original per-fund files for inspection and produce a combined simulation input:
+Run these commands in separate terminals from the repository root, with the Python environment active:
 
-```csv
-date,hyg,sjb
+```powershell
+python -m uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 8000
 ```
 
-The combined file should contain:
-
-- Sorted, unique trading dates.
-- Positive adjusted prices.
-- Only dates with valid observations for both funds.
-- No silently filled missing prices.
-
-Record data source, retrieval time, date coverage, adjustment settings, and a data version in metadata.json. A requested range must contain enough valid observations for the selected calculation.
-
-Adjusted prices are analytical inputs rather than executable trade prices. Review data-provider usage and redistribution terms before a public or commercial deployment.
-
-## Planned API
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| GET | /api/health | Service health |
-| GET | /api/metadata | Data coverage and assumptions |
-| GET | /api/scenarios | Historical presets |
-| POST | /api/simulations | Portfolio simulation |
-| GET | /api/research/sanity | Daily-return diagnostics |
-| GET | /api/research/convexity | Rolling-window analysis |
-| POST | /api/recommendations | Optional historical ratio search |
-
-Example simulation request:
-
-```json
-{
-  "book_size": 1000000,
-  "hedge_ratio": 0.6,
-  "start_date": "2022-01-03",
-  "end_date": "2022-12-30",
-  "annual_borrow_rate": 0.02
-}
+```powershell
+npm --prefix frontend run dev
 ```
 
-These dates are illustrative inputs. Return actual effective trading dates, portfolio paths, summary metrics, assumptions, and the data version. Finalize the request/response schemas in docs/api-contract.md before integration.
+Open http://127.0.0.1:5173. Vite proxies `/api` to the backend on port 8000. Python calculations are authoritative. To develop the UI against deterministic synthetic data, explicitly set `VITE_USE_MOCK=true` in `frontend/.env.local`; the UI labels that mode. There is no automatic fallback to synthetic results when the real API fails.
+
+## Data and configuration
+
+`backend/data/prices.csv` contains 3,912 shared observations from March 22, 2011 through October 9, 2026. The loader uses `hyg_adj_close`/`sjb_adj_close` (or normalized `hyg`/`sjb` columns), validates positive finite prices and unique dates, and sorts dates without forward filling. Cached prices are loaded once per API worker. Research and presets are precomputed from that snapshot; restart the server after changing the cache.
+
+`backend/data/metadata.json` records the exact SHA-256 hash and adjustment convention. The legacy cache's original retrieval time is unknown and is explicitly recorded as null. Describing an existing file does not retrospectively verify its provider response.
+
+Optional: copy `backend/.env.example` to `backend/.env`. Supported settings are `APP_NAME`, `CORS_ORIGINS`, `PRICES_PATH`, and `METADATA_PATH`; environment variables take precedence. Relative cache paths resolve from `backend/`. A missing/invalid price cache prevents startup. Missing or mismatched provenance produces visible metadata notes and does not claim a source it cannot establish.
+
+Refresh the cache explicitly (requires provider access):
+
+```powershell
+python backend/scripts/download_prices.py
+```
+
+The downloader uses yfinance with `auto_adjust=False`, retains raw and adjusted closes, removes rows missing either fund, validates staged prices before replacing the cache, and writes provenance. `--start YYYY-MM-DD` and `--end YYYY-MM-DD` bound the download; end is exclusive. Never refresh during a rehearsal. To identify an existing legacy cache without downloading:
+
+```powershell
+python backend/scripts/download_prices.py --describe-existing
+```
+
+This overwrites the provenance sidecar with an honest legacy-cache description. `sample_prices.csv` is a small synthetic arithmetic fixture, not the demo's market cache.
 
 ## Verification
 
-From backend/:
-
 ```powershell
-python -m pytest
+python -m pytest backend/tests
+npm --prefix frontend run lint
+npm --prefix frontend run build
+npm --prefix frontend run test:e2e
 ```
 
-From frontend/:
+Run backend tests from `backend/` with `python -m pytest`, or use the root command above (configured by `pytest.ini`). The browser suite builds the frontend, starts an isolated API server on port 8765, and checks desktop/mobile views, scenario switching, calculations displayed from HTTP responses, research charts, ratio search, and invalid-input recovery. It uses installed Edge on Windows. On other systems install the test browser with `npx playwright install chromium` from `frontend/`. Set `BROWSER_CHANNEL=chrome` to use installed Chrome. Set `HEDGER_PYTHON` if tests need a particular Python executable.
 
-```powershell
-npm run build
-```
+## API and documentation
 
-Required checks include known two-day examples, zero-hedge behavior, drawdown calculations, date alignment, validation errors, and a complete browser-to-API simulation.
+Interactive API docs: http://127.0.0.1:8000/docs.
 
-## Team responsibilities
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/api/health` | Worker health |
+| GET | `/api/metadata` | Coverage, source, hash, and supported features |
+| GET | `/api/scenarios` | Validated stress/choppy presets and full history |
+| POST | `/api/simulations` | Paths, P/L, returns, drawdown, and assumptions |
+| GET | `/api/research/sanity` | Daily return diagnostics |
+| GET | `/api/research/convexity?window_days=63` | Rolling return/volatility points |
+| POST | `/api/recommendations` | In-sample historical ratio grid search |
 
-| Person | Primary responsibility |
-| --- | --- |
-| A | Data pipeline, FastAPI foundation, and research endpoint wiring |
-| B | Simulator, metrics, simulation endpoint, and optional recommendation |
-| C | Research calculations and React research charts |
-| D | React interface, shared API client, and frontend integration |
+- [API contract](docs/api-contract.md): complete fields, units, and error behavior.
+- [Methodology](docs/methodology.md): formulas, windows, costs, presets, and interpretation limits.
+- [Demo script](docs/demo-script.md): rehearsal steps and reference numbers.
+- [Team plan and delivery status](docs/team-plan.md): ownership, acceptance criteria, and deferred scope.
+- [Deployment notes](docs/deployment.md): single-origin and separate-service setups.
 
-All four contribute to review, documentation, integration, and demo rehearsal.
+## Troubleshooting
 
-## Deployment direction
+- **API cannot be reached:** start Python; for hot reload, confirm port 8000 matches Vite's proxy. Retry in the interface.
+- **Price cache not found:** inspect `PRICES_PATH`; use the included cache or explicitly refresh it.
+- **Unexpected synthetic labels:** remove `VITE_USE_MOCK=true`, restart Vite/rebuild, and reload.
+- **Cross-origin errors:** use the same-origin demo/proxy, or allow the exact frontend origin in `CORS_ORIGINS` when deploying separately.
+- **Browser test cannot launch:** select an installed browser channel or install Playwright Chromium. Tests launch an isolated profile.
+- **Plotly build warning:** the plotting library is a large lazy-loaded asset; local builds succeed. A smaller chart bundle remains a performance improvement.
 
-The React frontend and Python API can be deployed separately. A potential setup is Vercel for the frontend and a managed container service for the backend.
-
-Docker can package the Python service and its dependencies. Supabase can be added for authentication and saved simulations if those features become necessary. Kubernetes is a later operational choice rather than a requirement for the prototype.
-
-Before deployment, configure production API URLs, allowed origins, HTTPS, logs, and cache availability. Verify provider requirements when selecting hosting.
-
-## Institutional use and limitations
-
-The intended audience is credit investment and risk teams exploring market hedges for restricted exposures. The prototype supports historical comparison; it does not establish that a hedge is permissible, liquid enough, or suitable for a particular portfolio.
-
-An institutional version would require actual portfolio exposures, better cost and liquidity modeling, reliable data access, reproducible reporting, access controls, and independent model validation.
-
-A broad-market hedge may reduce general market exposure while leaving issuer-specific default risk largely unprotected. Past performance does not establish future protection.
+The academic overlay, public hosting, accounts, saved simulations, and portfolio-specific institutional modeling remain outside the local demo. No formal academic replication or out-of-sample investment claim is made.

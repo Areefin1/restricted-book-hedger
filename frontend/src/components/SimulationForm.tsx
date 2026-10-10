@@ -79,7 +79,7 @@ export function SimulationForm({ form, errors, onChange, scenarios, meta, fields
       <p className="scenario-note">
         {activeScenario ? (
           <>
-            <span className="badge warn">Provisional</span> {activeScenario.rule}
+            <span className="badge">Preset rule</span> {activeScenario.rule}
           </>
         ) : (
           'Custom range. Choose any dates within the available history.'

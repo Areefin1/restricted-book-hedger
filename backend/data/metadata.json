@@ -1,0 +1,13 @@
+{
+  "source": "legacy repository cache",
+  "provenance": "Bundled historical HYG/SJB adjusted-close cache. The repository downloader uses yfinance/Yahoo Finance; this legacy cache's original retrieval time and provider response were not recorded.",
+  "retrieved_at": null,
+  "metadata_recorded_at": "2026-10-10T01:15:53.851615+00:00",
+  "first_date": "2011-03-22",
+  "last_date": "2026-10-09",
+  "trading_days": 3912,
+  "adjustment": "auto_adjust=False; analytical inputs use Adj Close for both funds. Raw closes are retained for inspection.",
+  "sha256": "1a1065cba7340944bbf13f109aed00942edea74e7c4cdfe6626b0c79a42b8d9c",
+  "data_version": "sha256:1a1065cba7340944bbf13f109aed00942edea74e7c4cdfe6626b0c79a42b8d9c",
+  "is_synthetic": false
+}

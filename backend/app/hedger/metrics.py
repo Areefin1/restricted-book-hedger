@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-STRATEGIES = ("unhedged", "static_short_headeged", "sjb_headged")
+STRATEGIES = ("unhedged", "static_short_hedged", "sjb_hedged")
 
 def validate_values(values: pd.Series) -> np.ndarray:
     if not isinstance(values, pd.Series) or values.empty:
@@ -16,7 +16,7 @@ def validate_values(values: pd.Series) -> np.ndarray:
         raise ValueError("Portfolio values must be finite real numbers")
 
     if array[0] <= 0:
-        raise ValueError("Starting portfolio value musst be postitive")
+        raise ValueError("Starting portfolio value must be positive")
     return array
 
 
@@ -26,7 +26,7 @@ def max_drawdown_pct(values: pd.Series) -> float:
     with np.errstate(over="ignore", invalid="ignore"):
         drawdowns = (1- array / running_peaks) * 100
 
-    if no np.isfinite(drawdowns).all():
+    if not np.isfinite(drawdowns).all():
         raise ValueError("Portfolio values produce nonfinite drawdown metrics")
     return float(drawdowns.max())
 
@@ -52,7 +52,7 @@ def summarize_paths(paths: pd.DataFrame) -> pd.DataFrame:
 
     rows = []
     for strategy in STRATEGIES:
-        values = _validated_values(paths[strategy])
+        values = validate_values(paths[strategy])
         start = values[0]
         end = values[-1]
         with np.errstate(over="ignore", invalid="ignore", divide="ignore"):

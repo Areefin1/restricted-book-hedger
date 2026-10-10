@@ -79,7 +79,7 @@ export function SimulatorTab({ req, res }: { req: SimulationRequest; res: Simula
         />
       </div>
 
-      <Panel title="Portfolio performance" subtitle="Book value plus hedge P/L for each strategy, daily.">
+      <Panel title="Portfolio performance" subtitle="Daily total portfolio value and profit / loss relative to starting capital.">
         <PortfolioChart paths={res.paths} bookSize={req.book_size} />
       </Panel>
 
@@ -89,7 +89,7 @@ export function SimulatorTab({ req, res }: { req: SimulationRequest; res: Simula
         </Panel>
         <Panel title="Observations" subtitle="Generated from the figures on this page.">
           <Observations risks={risks} />
-          <p className="fine">Describes one historical window on synthetic data. It is not a forecast or a recommendation.</p>
+          <p className="fine">Describes the selected window and data version. It is not a forecast or a recommendation.</p>
         </Panel>
       </div>
     </div>

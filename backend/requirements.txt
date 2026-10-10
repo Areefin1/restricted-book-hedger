@@ -1,13 +1,14 @@
 # API server and request validation
-fastapi
-uvicorn
-pydantic
+fastapi==0.135.3
+uvicorn==0.44.0
+pydantic==2.13.0
+pydantic-settings==2.13.1
 
 # Historical market data and numerical analysis
-pandas
-numpy
-yfinance
+pandas==3.0.5
+numpy==2.5.2
+yfinance==1.7.0
 
 # Backend and API Testing
-pytest
-httpx
+pytest==9.1.1
+httpx==0.28.1

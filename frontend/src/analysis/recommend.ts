@@ -5,7 +5,7 @@
 
 import type { RatioGridRow, RecommendationRequest, RecommendationResponse } from '../api/types'
 import type { PriceRow } from '../mock/syntheticPrices'
-import { TRADING_DAYS_PER_YEAR, median } from './metrics'
+import { calendarDays, median } from './metrics'
 import { HedgerError, sliceRange } from './simulate'
 
 export const RATIO_GRID = Array.from({ length: 21 }, (_, i) => i / 20)
@@ -27,18 +27,18 @@ export function recommendRatio(
     )
   }
 
-  const windows: { hyg: number; sjb: number }[] = []
+  const windows: { hyg: number; sjb: number; days: number }[] = []
   for (let i = 0; i + w < rows.length; i++) {
     windows.push({
       hyg: rows[i + w].hyg / rows[i].hyg - 1,
       sjb: rows[i + w].sjb / rows[i].sjb - 1,
+      days: calendarDays(rows[i].date, rows[i + w].date),
     })
   }
 
   // Each window starts with a fresh hedge sized at h × book value.
-  const borrow = (req.annual_borrow_rate * w) / TRADING_DAYS_PER_YEAR
-  const windowReturn = (h: number, x: { hyg: number; sjb: number }) =>
-    req.instrument === 'static_short' ? (1 - h) * x.hyg - h * borrow : x.hyg + h * x.sjb
+  const windowReturn = (h: number, x: { hyg: number; sjb: number; days: number }) =>
+    req.instrument === 'static_short' ? (1 - h) * x.hyg - h * req.annual_borrow_rate * x.days / 365 : x.hyg + h * x.sjb
 
   const grid: RatioGridRow[] = RATIO_GRID.map((h) => {
     const rets = windows.map((x) => windowReturn(h, x))

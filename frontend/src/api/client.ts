@@ -1,9 +1,8 @@
 // API client. The UI only talks to the HedgerApi interface, so the mock can
 // be swapped for the FastAPI backend without touching components.
 //
-// Default: the in-browser mock client (synthetic data). Setting
-// VITE_API_BASE_URL switches to HTTP calls against the endpoints proposed in
-// docs/team-plan.md §5. That path is untested until the backend exists.
+// Default: same-origin HTTP (Vite proxies /api during development).
+// VITE_API_BASE_URL overrides the origin; VITE_USE_MOCK=true opts into synthetic data.
 
 import { mockApi } from '../mock/mockApi'
 import { ApiRequestError } from './errors'
@@ -39,11 +38,11 @@ function httpApi(baseUrl: string): HedgerApi {
         headers: { 'Content-Type': 'application/json', ...init?.headers },
       })
     } catch {
-      throw new ApiRequestError('NETWORK', `Could not reach the API at ${base}.`)
+      throw new ApiRequestError('NETWORK', `Could not reach the API at ${base || window.location.origin}. Start the Python backend and retry.`)
     }
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as ApiError | null
-      throw new ApiRequestError(body?.error.code ?? `HTTP_${res.status}`, body?.error.message ?? res.statusText)
+      throw new ApiRequestError(body?.error?.code ?? `HTTP_${res.status}`, body?.error?.message ?? res.statusText)
     }
     return (await res.json()) as T
   }
@@ -61,4 +60,4 @@ function httpApi(baseUrl: string): HedgerApi {
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined
 
-export const api: HedgerApi = baseUrl ? httpApi(baseUrl) : mockApi
+export const api: HedgerApi = import.meta.env.VITE_USE_MOCK === 'true' ? mockApi : httpApi(baseUrl ?? '')

@@ -4,7 +4,7 @@
 
 import type { Assumption, PathPoint, SimulationRequest, SimulationResponse, SummaryRow } from '../api/types'
 import type { PriceRow } from '../mock/syntheticPrices'
-import { TRADING_DAYS_PER_YEAR, maxDrawdown } from './metrics'
+import { calendarDays, maxDrawdown } from './metrics'
 
 export class HedgerError extends Error {
   readonly code: string
@@ -61,7 +61,7 @@ export function simulationAssumptions(req: SimulationRequest): Assumption[] {
       label: 'Static short',
       detail: `Short HYG worth hedge ratio × book size at the start, share count held fixed. Borrow cost ${(
         req.annual_borrow_rate * 100
-      ).toFixed(2)}%/yr accrues on the initial short notional per trading day.`,
+      ).toFixed(2)}%/yr accrues on the initial short notional using actual elapsed calendar days / 365.`,
     },
     {
       label: 'SJB hedge',
@@ -89,19 +89,24 @@ export function simulateHedges(
 
   const B = req.book_size
   const h = req.hedge_ratio
-  const dailyBorrow = (h * B * req.annual_borrow_rate) / TRADING_DAYS_PER_YEAR
+  const dailyBorrow = (h * B * req.annual_borrow_rate) / 365
   const hyg0 = rows[0].hyg
   const sjb0 = rows[0].sjb
 
-  const paths: PathPoint[] = rows.map((r, i) => {
+  const paths: PathPoint[] = rows.map((r) => {
     const g = r.hyg / hyg0
     const s = r.sjb / sjb0
     const book = B * g
+    const staticValue = book - h * B * (g - 1) - dailyBorrow * calendarDays(rows[0].date, r.date)
+    const sjbValue = book + h * B * (s - 1)
     return {
       date: r.date,
       unhedged: book,
-      static_short_hedged: book - h * B * (g - 1) - dailyBorrow * i,
-      sjb_hedged: book + h * B * (s - 1),
+      static_short_hedged: staticValue,
+      sjb_hedged: sjbValue,
+      unhedged_pnl: book - B,
+      static_short_hedged_pnl: staticValue - B,
+      sjb_hedged_pnl: sjbValue - B,
     }
   })
 

@@ -19,10 +19,14 @@ def _finite_number(value: float, name: str) -> float:
 
 
 def simulate_hedges(prices: pd.DataFrame, book_size: float, hedge_ratio: float, annual_borrow_rate: float = 0.0,) -> pd.DataFrame:
-    """Return daily portfolio values for an HYG-proxy book and two hedges.
+    """Return daily portfolio values and P/L for an HYG-proxy book and two hedges.
+
+    The three strategy columns contain total portfolio values. Matching *_pnl
+    columns contain cumulative portfolio profit/loss: total value - book_size.
+    P/L starts at zero and includes any modeled borrow costs.
 
     Expect selected, adjusted hyg/sjb prices indexed by sorted trading dates.
-    All paths begin at book_size. Both hedge positions are fixed at inception;
+    Total-value paths begin at book_size. Both hedges are fixed at inception;
     the SJB purchase is offset by financing with zero interest. The short uses
     negative adjusted HYG returns as a simplified P/L model, not a trade ledger.
 
@@ -34,6 +38,7 @@ def simulate_hedges(prices: pd.DataFrame, book_size: float, hedge_ratio: float, 
     book_size = _finite_number(book_size, "Book size")
     hedge_ratio = _finite_number(hedge_ratio, "Hedge ratio")
     annual_borrow_rate = _finite_number(annual_borrow_rate, "Annual borrow rate")
+
     if book_size <= 0:
         raise ValueError("Book size must be positive")
     if not 0 <= hedge_ratio <= 1:
@@ -84,6 +89,8 @@ def simulate_hedges(prices: pd.DataFrame, book_size: float, hedge_ratio: float, 
         },
         index=prices.index.copy(),
     )
+    for strategy in ("unhedged", "static_short_hedged", "sjb_hedged"):
+        results[f"{strategy}_pnl"] = results[strategy] - book_size
     results.index.name = "date"
     if not np.isfinite(results.to_numpy()).all():
         raise ValueError("Simulation inputs produce nonfinite portfolio values")
