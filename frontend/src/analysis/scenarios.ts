@@ -3,7 +3,7 @@
 
 import type { Scenario } from '../api/types'
 import type { PriceRow } from '../mock/syntheticPrices'
-import { annualizedVol, simpleReturns } from './metrics'
+import { mean, simpleReturns } from './metrics'
 
 const CHOPPY_WINDOW = 126
 const CHOPPY_MAX_NET_MOVE = 0.02
@@ -22,7 +22,7 @@ function choppyWindow(prices: PriceRow[], exclude: Scenario[]): { start: string;
     if (exclude.some((x) => start <= x.end_date && end >= x.start_date)) continue
     const net = prices[i + CHOPPY_WINDOW].hyg / prices[i].hyg - 1
     if (Math.abs(net) > CHOPPY_MAX_NET_MOVE) continue
-    const vol = annualizedVol(rets.slice(i, i + CHOPPY_WINDOW))
+    const vol = Math.sqrt(252 * mean(rets.slice(i, i + CHOPPY_WINDOW).map((r) => r*r)))
     if (!best || vol > best.vol) best = { start, end, vol }
   }
   return best

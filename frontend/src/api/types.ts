@@ -25,7 +25,9 @@ export interface Metadata {
   /** Description of the source and any provenance limitations. */
   provenance: string
   /** True only for explicitly synthetic data. */
-  is_synthetic: boolean
+  is_synthetic: boolean | null
+  verified?: boolean
+  cash_provenance?: string
   features: { recommendation: boolean }
   retrieved_at?: string | null
   source?: string
@@ -44,7 +46,18 @@ export interface Scenario {
 }
 
 // POST /api/simulations
-export interface SimulationRequest {
+export interface ModelingOptions {
+  annual_cash_rate?: number | null
+  funding_spread?: number
+  rebate_spread?: number
+  round_trip_cost_bps?: number
+  book_beta?: number
+  annual_basis_return?: number
+  termination_floor?: number
+  max_hedge_notional?: number | null
+}
+
+export interface SimulationRequest extends ModelingOptions {
   book_size: number
   hedge_ratio: number
   start_date: IsoDate
@@ -76,6 +89,9 @@ export interface Assumption {
 }
 
 export interface SimulationResponse {
+  instrument_returns: { date: IsoDate; hyg_return: number; sjb_return: number }[]
+  exposures: { date: IsoDate; static_short_ratio: number | null; sjb_ratio: number | null }[]
+  events: { date: IsoDate; strategy: StrategyId; reason: string }[]
   paths: PathPoint[]
   summary: SummaryRow[]
   effective_start_date: IsoDate
@@ -105,6 +121,10 @@ export interface SanityResponse {
 
 // GET /api/research/convexity?window_days=63
 export interface RollingWindowPoint {
+  hyg_total_return: number
+  sjb_total_return: number
+  cash_return: number
+  hyg_sample_vol: number
   start_date: IsoDate
   end_date: IsoDate
   hyg_return: number
@@ -123,7 +143,8 @@ export interface ConvexityResponse {
 // POST /api/recommendations (optional feature)
 export type HedgeInstrument = 'static_short' | 'sjb'
 
-export interface RecommendationRequest {
+export interface RecommendationRequest extends ModelingOptions {
+  book_size?: number
   start_date: IsoDate
   end_date: IsoDate
   instrument: HedgeInstrument
@@ -139,6 +160,7 @@ export interface RatioGridRow {
 }
 
 export interface RecommendationResponse {
+  window_days: number
   instrument: HedgeInstrument
   objective: string
   recommended_ratio: number
@@ -149,5 +171,20 @@ export interface RecommendationResponse {
   effective_start_date: IsoDate
   effective_end_date: IsoDate
   assumptions: Assumption[]
+  data_version: string
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ExplanationRequest extends SimulationRequest {
+  question?: string
+  history?: ChatMessage[]
+}
+
+export interface ExplanationResponse {
+  explanation: string
   data_version: string
 }

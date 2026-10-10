@@ -1,13 +1,15 @@
 {
-  "source": "legacy repository cache",
-  "provenance": "Bundled historical HYG/SJB adjusted-close cache. The repository downloader uses yfinance/Yahoo Finance; this legacy cache's original retrieval time and provider response were not recorded.",
+  "source": "unverified legacy repository cache",
+  "provenance": "Bundled HYG/SJB analytical return series. Original provider response, adjustment verification and retrieval time were not recorded; cache identity alone does not verify historical accuracy.",
   "retrieved_at": null,
-  "metadata_recorded_at": "2026-10-10T01:15:53.851615+00:00",
+  "metadata_recorded_at": "2026-10-10T18:27:52.544334+00:00",
   "first_date": "2011-03-22",
   "last_date": "2026-10-09",
   "trading_days": 3912,
   "adjustment": "auto_adjust=False; analytical inputs use Adj Close for both funds. Raw closes are retained for inspection.",
-  "sha256": "1a1065cba7340944bbf13f109aed00942edea74e7c4cdfe6626b0c79a42b8d9c",
-  "data_version": "sha256:1a1065cba7340944bbf13f109aed00942edea74e7c4cdfe6626b0c79a42b8d9c",
-  "is_synthetic": false
+  "sha256": "49468ede28065fd6492c0ef54488ae34cd0a49367e2a8da8fd8889bcaef503dc",
+  "data_version": "sha256:49468ede28065fd6492c0ef54488ae34cd0a49367e2a8da8fd8889bcaef503dc",
+  "is_synthetic": null,
+  "verified": false,
+  "cash_provenance": "UNVERIFIED legacy rf_annual_pct; original source, quote basis and timing unavailable. Interpreted only as an assumed effective annual rate, prior observation, actual/365."
 }

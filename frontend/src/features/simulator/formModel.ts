@@ -13,6 +13,14 @@ export interface SimForm {
   bookSize: string
   hedgeRatio: string
   borrowRatePct: string
+  cashRatePct: string
+  fundingSpreadPct: string
+  rebateSpreadPct: string
+  tradingCostBps: string
+  bookBeta: string
+  basisReturnPct: string
+  terminationFloorPct: string
+  hedgeCapacity: string
 }
 
 export type FormErrors = Partial<Record<keyof SimForm, string>>
@@ -24,6 +32,14 @@ export const DEFAULT_FORM: SimForm = {
   bookSize: '1,000,000',
   hedgeRatio: '0.6',
   borrowRatePct: '2',
+  cashRatePct: '',
+  fundingSpreadPct: '0',
+  rebateSpreadPct: '0',
+  tradingCostBps: '0',
+  bookBeta: '1',
+  basisReturnPct: '0',
+  terminationFloorPct: '0',
+  hedgeCapacity: '',
 }
 
 export function parseAmount(s: string): number {
@@ -64,6 +80,19 @@ export function validateForm(form: SimForm, meta: Metadata | undefined): { reque
     else if (meta && form.startDate > meta.last_date) errors.startDate = `Data ends ${meta.last_date}.`
   }
 
+  const specs = [
+    ['cashRatePct', -99.999, 100], ['fundingSpreadPct', 0, 100],
+    ['rebateSpreadPct', 0, 100], ['tradingCostBps', 0, 10000],
+    ['bookBeta', 0, 3], ['basisReturnPct', -100, 100], ['terminationFloorPct', 0, 99],
+  ] as const
+  for (const [key, lo, hi] of specs) {
+    if (key === 'cashRatePct' && form[key].trim() === '') continue
+    const n = parseNumber(form[key])
+    if (!Number.isFinite(n) || n < lo || n > hi) errors[key] = `Enter a number from ${lo} to ${hi}.`
+  }
+  const capacity = form.hedgeCapacity.trim() ? parseAmount(form.hedgeCapacity) : null
+  if (capacity !== null && (!Number.isFinite(capacity) || capacity <= 0)) errors.hedgeCapacity = 'Enter a positive dollar limit or leave blank.'
+  else if (capacity !== null && bookSize * ratio > capacity) errors.hedgeRatio = 'Initial hedge exceeds the assumed capacity.'
   if (Object.keys(errors).length) return { request: null, errors }
   return {
     request: {
@@ -72,6 +101,14 @@ export function validateForm(form: SimForm, meta: Metadata | undefined): { reque
       start_date: form.startDate,
       end_date: form.endDate,
       annual_borrow_rate: borrowPct / 100,
+      annual_cash_rate: form.cashRatePct.trim() ? Number(form.cashRatePct) / 100 : null,
+      funding_spread: Number(form.fundingSpreadPct) / 100,
+      rebate_spread: Number(form.rebateSpreadPct) / 100,
+      round_trip_cost_bps: Number(form.tradingCostBps),
+      book_beta: Number(form.bookBeta),
+      annual_basis_return: Number(form.basisReturnPct) / 100,
+      termination_floor: Number(form.terminationFloorPct) / 100,
+      max_hedge_notional: capacity,
     },
     errors,
   }
@@ -82,5 +119,5 @@ export function applyScenario(form: SimForm, scenario: Scenario): SimForm {
 }
 
 export function requestKey(r: SimulationRequest): string {
-  return [r.book_size, r.hedge_ratio, r.start_date, r.end_date, r.annual_borrow_rate].join('|')
+  return JSON.stringify(r)
 }

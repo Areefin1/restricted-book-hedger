@@ -50,11 +50,11 @@ export function DailyReturnChart({ sanity }: { sanity: SanityResponse }) {
     () =>
       baseLayout({
         hovermode: 'closest',
-        xaxis: { title: { text: 'HYG daily return', font: { size: 11 } }, ticksuffix: '%', zeroline: true },
-        yaxis: { title: { text: 'SJB daily return', font: { size: 11 } }, ticksuffix: '%', zeroline: true },
+        xaxis: { title: { text: 'HYG daily excess return', font: { size: 11 } }, ticksuffix: '%', zeroline: true },
+        yaxis: { title: { text: 'SJB daily excess return', font: { size: 11 } }, ticksuffix: '%', zeroline: true },
       }),
     [],
   )
 
-  return <Plot data={data} layout={layout} height={320} ariaLabel="Scatter of SJB daily returns against HYG daily returns" />
+  return <Plot data={data} layout={layout} height={320} ariaLabel="Scatter of SJB daily excess returns against HYG daily excess returns" />
 }

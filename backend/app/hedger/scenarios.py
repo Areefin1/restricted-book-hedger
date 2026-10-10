@@ -18,8 +18,9 @@ def build_scenarios(prices: pd.DataFrame) -> list[dict]:
         if len(selected) >= 2:
             scenarios.append(dict(id=scenario_id, name=name, start_date=selected.index[0].strftime("%Y-%m-%d"),
                                   end_date=selected.index[-1].strftime("%Y-%m-%d"), rule=rule))
-    windows = calculate_rolling_windows(prices, 126)
-    candidates = windows.loc[windows.hyg_return.abs() <= 0.02]
+    # The preset selects on total proxy returns, independently of cash inputs.
+    windows = calculate_rolling_windows(prices.assign(rf_return=0.0), 126)
+    candidates = windows.loc[windows["hyg_return"].abs() <= 0.02]
     for scenario in scenarios:
         candidates = candidates.loc[~((candidates.start_date <= scenario["end_date"]) & (candidates.end_date >= scenario["start_date"]))]
     if not candidates.empty:

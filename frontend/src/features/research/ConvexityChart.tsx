@@ -63,5 +63,5 @@ export function ConvexityChart({ data: res }: { data: ConvexityResponse }) {
     [res.window_days],
   )
 
-  return <Plot data={data} layout={layout} height={380} ariaLabel="Rolling-window SJB returns against HYG returns, colored by volatility" />
+  return <Plot data={data} layout={layout} height={380} ariaLabel="Rolling-window SJB excess returns against HYG excess returns, colored by volatility" />
 }

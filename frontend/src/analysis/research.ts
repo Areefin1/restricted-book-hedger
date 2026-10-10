@@ -5,12 +5,13 @@ import type { ConvexityResponse, RollingWindowPoint, SanityResponse } from '../a
 import type { PriceRow } from '../mock/syntheticPrices'
 import { annualizedVol, mean, ols, simpleReturns } from './metrics'
 import { HedgerError } from './simulate'
+import { cashFactors } from './accounting'
 
 export const PERMITTED_WINDOWS = [21, 63, 126] as const
 
 export function runSanityCheck(prices: PriceRow[], dataVersion: string): SanityResponse {
-  const hyg = simpleReturns(prices.map((p) => p.hyg))
-  const sjb = simpleReturns(prices.map((p) => p.sjb))
+  const hyg = simpleReturns(prices.map((p) => p.hyg)).map((r, i) => r - prices[i + 1].rf_return)
+  const sjb = simpleReturns(prices.map((p) => p.sjb)).map((r, i) => r - prices[i + 1].rf_return)
   const fit = ols(hyg, sjb)
   return {
     points: hyg.map((r, i) => ({ date: prices[i + 1].date, hyg_return: r, sjb_return: sjb[i] })),
@@ -20,7 +21,7 @@ export function runSanityCheck(prices: PriceRow[], dataVersion: string): SanityR
     correlation: fit?.correlation ?? null,
     observations: hyg.length,
     notes: [
-      'OLS of SJB daily return on HYG daily return over the full history.',
+      'OLS of SJB daily excess return on HYG daily excess return. Synthetic cash is explicitly zero.',
       'A beta near -1 indicates inverse co-movement with HYG, not exact benchmark replication. The intercept mixes expenses, benchmark differences, tracking error, and noise.',
     ],
     data_version: dataVersion,
@@ -39,17 +40,24 @@ export function calculateRollingWindows(
   if (!(PERMITTED_WINDOWS as readonly number[]).includes(windowDays)) {
     throw new HedgerError('INVALID_WINDOW', `window_days must be one of ${PERMITTED_WINDOWS.join(', ')}.`)
   }
-  const hygRets = simpleReturns(prices.map((p) => p.hyg))
+  const hygRets = simpleReturns(prices.map((p) => p.hyg)).map((r, i) => r - prices[i + 1].rf_return)
+  const cash = cashFactors(prices, {})
   const points: RollingWindowPoint[] = []
   for (let i = 0; i + windowDays < prices.length; i++) {
     const a = prices[i]
     const b = prices[i + windowDays]
+    const cashRet = cash[i + windowDays] / cash[i] - 1
+    const returns = hygRets.slice(i, i + windowDays)
     points.push({
       start_date: a.date,
       end_date: b.date,
-      hyg_return: b.hyg / a.hyg - 1,
-      sjb_return: b.sjb / a.sjb - 1,
-      hyg_realized_vol: annualizedVol(hygRets.slice(i, i + windowDays)),
+      hyg_return: b.hyg / a.hyg - 1 - cashRet,
+      sjb_return: b.sjb / a.sjb - 1 - cashRet,
+      hyg_total_return: b.hyg / a.hyg - 1,
+      sjb_total_return: b.sjb / a.sjb - 1,
+      cash_return: cashRet,
+      hyg_realized_vol: Math.sqrt(252 * mean(returns.map((r) => r * r))),
+      hyg_sample_vol: annualizedVol(returns),
     })
   }
   return {
@@ -58,7 +66,8 @@ export function calculateRollingWindows(
     notes: [
       `Each point is one ${windowDays}-trading-day window (${windowDays} return intervals, ${windowDays + 1} prices).`,
       'Windows overlap by construction, so neighboring points are highly correlated and are not independent observations.',
-      'The dashed line y = -x is what a static -1x short would have returned before costs.',
+      'Returns are compounded asset total return minus compounded cash return. Volatility is zero-mean root-sum-squares of daily excess returns, annualized. Synthetic cash is explicitly zero.',
+      'The dashed line y = -x is the excess return of a funded static -1x position (2 cash accounts minus asset); it excludes borrow and trading costs.',
     ],
     data_version: dataVersion,
   }

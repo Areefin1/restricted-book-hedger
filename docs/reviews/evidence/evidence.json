@@ -1,0 +1,203 @@
+{
+  "csv_sha256": "49468ede28065fd6492c0ef54488ae34cd0a49367e2a8da8fd8889bcaef503dc",
+  "sidecar_sha256": "1a1065cba7340944bbf13f109aed00942edea74e7c4cdfe6626b0c79a42b8d9c",
+  "loaded_columns": [
+    "hyg",
+    "sjb"
+  ],
+  "observations": 3912,
+  "coverage": [
+    "2011-03-22",
+    "2026-10-09"
+  ],
+  "simulation_http": {
+    "status": 422,
+    "body": {
+      "error": {
+        "code": "INVALID_RANGE",
+        "message": "Prices must contain unique hyg, sjb, and rf_annual_pct columns"
+      }
+    }
+  },
+  "metadata": {
+    "first_date": "2011-03-22",
+    "last_date": "2026-10-09",
+    "trading_days": 3912,
+    "data_version": "sha256:49468ede28065fd6492c0ef54488ae34cd0a49367e2a8da8fd8889bcaef503dc",
+    "sha256": "49468ede28065fd6492c0ef54488ae34cd0a49367e2a8da8fd8889bcaef503dc",
+    "provenance": "Local adjusted-price cache; original source and retrieval time are unavailable.",
+    "retrieved_at": null,
+    "source": "unknown",
+    "adjustment": "Adjusted hyg/sjb analytical return series; see methodology.",
+    "is_synthetic": false,
+    "features": {
+      "recommendation": true
+    },
+    "notes": [
+      "Provenance sidecar does not match this cache; source details are unavailable."
+    ]
+  },
+  "research_http_status": 200,
+  "recommendation_http_status": 200,
+  "simulation_after_rate_injection_http": {
+    "status": 500,
+    "body": {
+      "error": {
+        "code": "INTERNAL_ERROR",
+        "message": "An unexpected server error occurred"
+      }
+    }
+  },
+  "2022_conditional_on_rate_interpretation": {
+    "simulated_static_end": 956016.4136022142,
+    "search_and_documentation_static_end": 944364.1395161275,
+    "difference_dollars": 11652.274086086662,
+    "elapsed_calendar_days": 361,
+    "warning": "Assumes unverified rf_annual_pct is an effective annual percentage, as hedge.py does."
+  },
+  "simulator_columns": [
+    "unhedged",
+    "static_short_hedged",
+    "sjb_hedged"
+  ],
+  "response_schema_errors_after_rate_injection": [
+    {
+      "field": [
+        "paths",
+        0,
+        "unhedged_pnl"
+      ],
+      "type": "missing"
+    },
+    {
+      "field": [
+        "paths",
+        0,
+        "static_short_hedged_pnl"
+      ],
+      "type": "missing"
+    },
+    {
+      "field": [
+        "paths",
+        0,
+        "sjb_hedged_pnl"
+      ],
+      "type": "missing"
+    },
+    {
+      "field": [
+        "paths",
+        1,
+        "unhedged_pnl"
+      ],
+      "type": "missing"
+    },
+    {
+      "field": [
+        "paths",
+        1,
+        "static_short_hedged_pnl"
+      ],
+      "type": "missing"
+    },
+    {
+      "field": [
+        "paths",
+        1,
+        "sjb_hedged_pnl"
+      ],
+      "type": "missing"
+    }
+  ],
+  "flat_5pct_one_year": {
+    "unhedged": 100.0,
+    "static_short_hedged": 105.0,
+    "sjb_hedged": 100.0
+  },
+  "total_return_regression": {
+    "beta": -1.0054773130617898,
+    "intercept_daily": 8.662534499065551e-06,
+    "intercept_times_252_pct": 0.2182958693764519
+  },
+  "conditional_excess_return_regression": {
+    "beta": -1.0045578609630303,
+    "intercept_daily": -0.0001154179032173327,
+    "intercept_times_252_pct": -2.908531161076784
+  },
+  "63_interval_volatility": {
+    "windows": 3849,
+    "tercile_changes_total_returns": 56,
+    "max_annualized_vol_difference_pct_points": 0.5965340265287444,
+    "note": "Isolates demeaning alone, using the same total returns; paper replication also requires excess returns."
+  },
+  "two_day_volatility": {
+    "continuation": {
+      "sample_annualized_pct": 0.0,
+      "paper_root_sum_squares_pct": 14.142135623730953
+    },
+    "reversal": {
+      "sample_annualized_pct": 224.49944320643652,
+      "paper_root_sum_squares_pct": 14.142135623730953
+    }
+  },
+  "independent_arithmetic": {
+    "drawdown_100_120_90_110_pct": 25.0,
+    "flat_daily_5pct_weekend_growth": 0.04010954652513021,
+    "expected_weekend_growth": 0.04010954652513554
+  },
+  "worst_return_days": [
+    {
+      "date": "2020-04-09",
+      "hyg": 0.06545883564787247,
+      "sjb": -0.07209225679940368
+    },
+    {
+      "date": "2020-03-16",
+      "hyg": -0.05496595404724147,
+      "sjb": 0.06466068446791162
+    },
+    {
+      "date": "2020-03-18",
+      "hyg": -0.04413279454876806,
+      "sjb": 0.04635191614923517
+    },
+    {
+      "date": "2020-03-26",
+      "hyg": 0.04573234762573808,
+      "sjb": -0.0457190613421774
+    },
+    {
+      "date": "2020-03-24",
+      "hyg": 0.041235479619103454,
+      "sjb": -0.04555968657302878
+    },
+    {
+      "date": "2020-03-09",
+      "hyg": -0.0430337497491482,
+      "sjb": 0.04015111242292435
+    },
+    {
+      "date": "2011-08-08",
+      "hyg": -0.04259667605946604,
+      "sjb": 0.04206858596258689
+    },
+    {
+      "date": "2020-03-12",
+      "hyg": -0.03995602088335004,
+      "sjb": 0.037319501233141095
+    }
+  ],
+  "rate_min_max": [
+    -0.1049999967217445,
+    5.3480000495910645
+  ],
+  "full_history_initial_60pct_sjb_hedge_exposure_at_end": 0.13871124381479877,
+  "zero_price_returns": {
+    "hyg": 59,
+    "sjb": 246
+  },
+  "gaps_above_four_calendar_days": {
+    "2012-10-31": 5
+  }
+}

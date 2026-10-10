@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from convexity import rolling_windows, theory_curve
+from research.convexity import rolling_windows, theory_curve
 
 def make_prices(hyg_rets, sjb_rets, start=100.0, rf_pct=0.0):
     """Build a price table (same columns as data.py) from chosen daily returns."""
@@ -47,10 +47,6 @@ def test_theory_curve_with_no_vol_and_no_rates():
 def test_single_window_has_no_bucket():
     df = rolling_windows(make_prices([0.10, -0.10], [-0.10, 0.10]), window=2)
     assert pd.isna(df.iloc[0]["vol_bucket"])
-
-def test_single_window_has_no_bucket():
-      df = rolling_windows(make_prices([0.10, -0.10], [-0.10, 0.10]), window=2)
-      assert pd.isna(df.iloc[0]["vol_bucket"])
 
 def test_decomposition_adds_up():
     rets = [0.02, -0.03, 0.01, 0.04, -0.02]

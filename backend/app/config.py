@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
+from pydantic import SecretStr
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Restricted Book Hedger"
+    gemini_api_key: SecretStr | None = None
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     prices_path: Path = Path("data/prices.csv")
     metadata_path: Path = Path("data/metadata.json")

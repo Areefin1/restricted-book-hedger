@@ -2,14 +2,16 @@
 
 import numpy as np
 import pandas as pd
+from app.hedger.funding import cash_returns, cash_note
 
 
 def run_sanity_check(prices: pd.DataFrame) -> dict:
-    returns = prices[["hyg", "sjb"]].pct_change(fill_method=None).iloc[1:]
+    returns = prices[["hyg", "sjb"]].pct_change(fill_method=None).sub(cash_returns(prices), axis=0).iloc[1:]
     x, y = returns["hyg"].to_numpy(), returns["sjb"].to_numpy()
     diagnostics = dict(beta=None, intercept_daily=None, r_squared=None, correlation=None)
     notes = [
-        "OLS of observed SJB daily adjusted returns on HYG daily adjusted returns over the full cache.",
+        "OLS of SJB daily excess returns on HYG daily excess returns over the full cache; cash is subtracted from both series.",
+        cash_note(prices),
         "HYG is a comparison proxy, not an identical benchmark. A beta near -1 indicates inverse co-movement, not proof of exact target delivery.",
         "The intercept combines benchmark differences, tracking, expenses, and noise; it is not an exact expense estimate.",
     ]

@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { api } from './api/client'
 import type { SimulationRequest, SimulationResponse } from './api/types'
 import { SimulationForm } from './components/SimulationForm'
+import { HedgeChat } from './features/chat/HedgeChat'
 import { Badge, ErrorState, Loading } from './components/ui'
 import { AssumptionsTab } from './features/assumptions/AssumptionsTab'
 import { RecommendationTab } from './features/recommendation/RecommendationTab'
@@ -88,9 +89,14 @@ export default function App() {
   const meta = useResource('metadata', () => api.getMetadata())
   const scenarios = useResource('scenarios', () => api.getScenarios())
   const synthetic = meta.data?.is_synthetic ?? api.mode === 'mock'
-  const dataLabel = meta.data ? (synthetic ? 'Synthetic data' : 'Cached market data') : 'Connecting to data'
+  const dataLabel = meta.data ? (synthetic ? 'Synthetic data' : meta.data.verified ? 'Verified cache' : 'Unverified cache') : 'Connecting to data'
 
   const { request, errors } = validateForm(form, meta.data)
+  // Search chooses its own ratio; a currently infeasible simulation ratio must
+  // not prevent it from searching feasible ratios under the capacity limit.
+  const searchValidation = validateForm({ ...form, hedgeRatio: '0' }, meta.data)
+  const { hedge_ratio: _ratio, start_date: _start, end_date: _end, annual_borrow_rate: _borrow, ...modelingOptions } = searchValidation.request ?? {} as Partial<SimulationRequest>
+  void _ratio; void _start; void _end; void _borrow
   const simKey = useDebounced(request ? JSON.stringify(request) : null, 250)
   const sim = useResource<SimResult>(simKey, async () => {
     const req = JSON.parse(simKey as string) as SimulationRequest
@@ -101,7 +107,6 @@ export default function App() {
   const usesSimulation = route === 'simulator' || route === 'risk' || route === 'strategies'
   const showControls = usesSimulation || route === 'recommendation'
   const hasErrors = Object.keys(errors).length > 0
-  const datesValid = !errors.startDate && !errors.endDate
   const updating = sim.loading || (request !== null && simKey !== JSON.stringify(request))
 
   const go = (r: Route) => {
@@ -140,10 +145,11 @@ export default function App() {
     case 'recommendation':
       body = (
         <RecommendationTab
+          modelingOptions={modelingOptions}
           startDate={form.startDate}
           endDate={form.endDate}
-          annualBorrowRate={request?.annual_borrow_rate ?? (Number(form.borrowRatePct) / 100 || 0)}
-          datesValid={datesValid && !errors.borrowRatePct}
+          annualBorrowRate={searchValidation.request?.annual_borrow_rate ?? 0}
+          datesValid={searchValidation.request !== null}
           onApply={(ratio) => {
             setForm((f) => ({ ...f, hedgeRatio: String(ratio) }))
             go('simulator')
@@ -223,7 +229,7 @@ export default function App() {
                 {updating ? 'Updating…' : hasErrors ? 'Inputs need attention' : sim.error ? 'Request failed' : sim.data ? 'Results current' : 'Connecting'}
               </span>
             )}
-            <Badge tone={synthetic ? 'warn' : 'accent'}>{synthetic ? 'Illustrative · not market data' : 'Historical · cached prices'}</Badge>
+            <Badge tone={synthetic || !meta.data?.verified ? 'warn' : 'accent'}>{synthetic ? 'Illustrative · not market data' : dataLabel}</Badge>
           </div>
         </header>
 
@@ -234,11 +240,11 @@ export default function App() {
             <section className="controls panel">
               <SimulationForm
                 form={form}
-                errors={errors}
+                errors={route === 'recommendation' ? searchValidation.errors : errors}
                 onChange={setForm}
                 scenarios={scenarios.data}
                 meta={meta.data}
-                fields={route === 'recommendation' ? { borrow: true } : undefined}
+                fields={route === 'recommendation' ? { book: true, borrow: true } : undefined}
               />
               {usesSimulation && sim.data && (
                 <p className="effective">
@@ -260,6 +266,14 @@ export default function App() {
           </footer>
         </main>
       </div>
+      <HedgeChat
+        req={sim.data?.req}
+        dataVersion={sim.data?.res.data_version}
+        disabledReason={api.mode === 'mock' ? 'AI chat is unavailable in synthetic mock mode.'
+          : hasErrors ? 'Fix the highlighted simulation inputs to continue.'
+          : sim.error ? 'Refresh the simulation before continuing.'
+          : updating || sim.stale || !sim.data ? 'Waiting for the current simulation…' : ''}
+      />
     </div>
   )
 }

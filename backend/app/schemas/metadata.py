@@ -19,7 +19,9 @@ class MetadataResponse(BaseModel):
     retrieved_at: str | None
     source: str
     adjustment: str
-    is_synthetic: bool
+    is_synthetic: bool | None
+    verified: bool = False
+    cash_provenance: str
     features: Features
     notes: list[str]
 

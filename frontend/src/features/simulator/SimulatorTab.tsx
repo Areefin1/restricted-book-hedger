@@ -78,7 +78,6 @@ export function SimulatorTab({ req, res }: { req: SimulationRequest; res: Simula
           footnote="Peak-to-trough loss, shown as a positive number."
         />
       </div>
-
       <Panel title="Portfolio performance" subtitle="Daily total portfolio value and profit / loss relative to starting capital.">
         <PortfolioChart paths={res.paths} bookSize={req.book_size} />
       </Panel>

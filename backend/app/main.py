@@ -18,7 +18,7 @@ from app.hedger.convexity import PERMITTED_WINDOWS, calculate_rolling_windows, w
 from app.hedger.provenance import cache_metadata
 from app.hedger.sanity import run_sanity_check
 from app.hedger.scenarios import build_scenarios
-from app.routes import health, metadata, recommendation, research, simulation
+from app.routes import explanation, health, metadata, recommendation, research, simulation
 
 
 logger = logging.getLogger(__name__)
@@ -54,12 +54,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.state.metadata = cache_metadata(settings.prices_path, settings.metadata_path, prices)
         version = application.state.metadata["data_version"]
         application.state.scenarios = build_scenarios(prices)
-        application.state.sanity = {**run_sanity_check(prices), "data_version": version}
-        application.state.convexity = {
-            window: dict(window_days=window, points=calculate_rolling_windows(prices, window).to_dict("records"),
-                         notes=window_notes(window), data_version=version)
-            for window in PERMITTED_WINDOWS
-        }
+        application.state.research_error = None
+        try:
+            from app.hedger.funding import cash_note
+            application.state.sanity = {**run_sanity_check(prices), "data_version": version}
+            application.state.convexity = {
+                window: dict(window_days=window, points=calculate_rolling_windows(prices, window).to_dict("records"),
+                             notes=window_notes(window) + [cash_note(prices)], data_version=version)
+                for window in PERMITTED_WINDOWS
+            }
+        except ValueError as exc:
+            # A price-only cache still supports health, metadata, and simulations
+            # with an explicit cash assumption. Research must never assume zero.
+            application.state.research_error = str(exc)
         try:
             yield
         finally:
@@ -114,7 +121,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             message = exc.detail if isinstance(exc.detail, str) else fallback
         return _error_response(exc.status_code, code, message, exc.headers)
 
-    for router in (health.router, metadata.router, simulation.router, research.router, recommendation.router):
+    for router in (
+        health.router,
+        metadata.router,
+        simulation.router,
+        research.router,
+        recommendation.router,
+        explanation.router,
+    ):
         application.include_router(router, prefix="/api")
     # Only known frontend paths are served; never swallow API 404/405 responses.
     frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
