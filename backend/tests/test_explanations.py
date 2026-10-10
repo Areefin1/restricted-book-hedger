@@ -10,7 +10,7 @@ from google.genai import errors
 from app.config import Settings
 from app.main import create_app
 from app.routes import explanation
-from app import explanations
+from app.services import explanations
 
 
 INPUTS = {
@@ -59,6 +59,15 @@ def test_original_summary_request_still_works(client):
     assert explanation.explain_simulation.call_args.kwargs == {
         "question": "Explain these results.", "history": [],
     }
+
+
+def test_chat_and_simulation_share_invalid_range_errors(client):
+    inputs = {**INPUTS, "start_date": "2023-01-03", "end_date": "2023-01-05"}
+    simulation = client.post("/api/simulations", json=inputs)
+    chat = client.post("/api/explanations", json={**inputs, "question": "Explain this"})
+    assert chat.status_code == simulation.status_code == 422
+    assert chat.json() == simulation.json()
+    explanation.explain_simulation.assert_not_called()
 
 
 @pytest.mark.parametrize("extra", [

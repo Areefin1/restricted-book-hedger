@@ -1,32 +1,16 @@
+"""HTTP adapter for grounded simulation explanations and follow-up questions."""
+
+import httpx
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from google.genai import errors
-from typing import Literal
 
-import httpx
-from pydantic import BaseModel, ConfigDict, Field
-
-from app.explanations import explain_simulation
-from app.routes.simulation import post_simulation
+from app.schemas.explanation import ExplanationRequest, ExplanationResponse
 from app.schemas.simulation import SimulationRequest, SimulationResponse
+from app.services.explanations import build_explanation_context, explain_simulation
+from app.services.simulation import build_simulation
 
 router = APIRouter(tags=["explanation"])
-
-
-class ChatMessage(BaseModel):
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-    role: Literal["user", "assistant"]
-    content: str = Field(min_length=1, max_length=12000)
-
-
-class ExplanationRequest(SimulationRequest):
-    question: str = Field(default="Explain these results.", min_length=1, max_length=2000)
-    history: list[ChatMessage] = Field(default_factory=list, max_length=12)
-
-
-class ExplanationResponse(BaseModel):
-    explanation: str
-    data_version: str
 
 
 @router.post("/explanations", response_model=ExplanationResponse)
@@ -40,24 +24,14 @@ def post_explanation(body: ExplanationRequest, request: Request):
         )
 
     inputs = SimulationRequest.model_validate(body.model_dump(exclude={"question", "history"}))
-    result = SimulationResponse.model_validate(post_simulation(inputs, request))
-    simulation = result.model_dump(mode="json")
-
-    context = {
-        "scope": "entire simulation period; no zoom applied",
-        "inputs": inputs.model_dump(mode="json"),
-        "effective_start_date": simulation["effective_start_date"],
-        "effective_end_date": simulation["effective_end_date"],
-        "units": {
-            "final_pnl": "USD",
-            "return_pct": "percentage points",
-            "max_drawdown_pct": "positive loss in percentage points",
-        },
-        "summary": simulation["summary"],
-        "events": simulation["events"],
-        "assumptions": simulation["assumptions"],
-        "data_metadata": request.app.state.metadata,
-    }
+    try:
+        raw_result = build_simulation(
+            request.app.state.prices, inputs, request.app.state.metadata["data_version"],
+        )
+    except ValueError as exc:
+        raise HTTPException(422, detail={"code": "INVALID_RANGE", "message": str(exc)}) from exc
+    result = SimulationResponse.model_validate(raw_result)
+    context = build_explanation_context(inputs, result, request.app.state.metadata)
 
     try:
         text = explain_simulation(
@@ -77,5 +51,5 @@ def post_explanation(body: ExplanationRequest, request: Request):
 
     return {
         "explanation": text,
-        "data_version": simulation["data_version"],
+        "data_version": result.data_version,
     }

@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import sys
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT/'backend'))
 from fastapi.testclient import TestClient
 from app.main import create_app
@@ -37,5 +37,5 @@ with TestClient(create_app()) as client:
                     sanity={k:v for k,v in sanity.items() if k != 'points'},
                     rolling_windows=len(rolling['points']), rolling_notes=rolling['notes'],
                     scenarios=client.get('/api/scenarios').json(), search=search)
-    (ROOT/'docs/review/evidence-remediation.json').write_text(json.dumps(evidence, indent=2)+'\n', encoding='utf-8')
+    (ROOT/'docs/reviews/evidence/evidence-remediation.json').write_text(json.dumps(evidence, indent=2)+'\n', encoding='utf-8')
     print(json.dumps({k:evidence[k] for k in ('simulation_status','zero_hedge_status','simulation_summary','ending_exposure','rolling_windows')}, indent=2))

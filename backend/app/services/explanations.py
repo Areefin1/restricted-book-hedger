@@ -1,9 +1,12 @@
+"""Build grounded simulation context and generate Gemini explanations."""
+
 import json
 
 from google import genai
 from google.genai import types
 
 from app.config import Settings
+from app.schemas.simulation import SimulationRequest, SimulationResponse
 
 
 INSTRUCTIONS = (
@@ -25,6 +28,27 @@ INSTRUCTIONS = (
     "specific dates or shapes of movements. "
     "Do not present the results as trading advice."
 )
+
+
+def build_explanation_context(
+    inputs: SimulationRequest, result: SimulationResponse, metadata: dict,
+) -> dict:
+    simulation = result.model_dump(mode="json")
+    return {
+        "scope": "entire simulation period; no zoom applied",
+        "inputs": inputs.model_dump(mode="json"),
+        "effective_start_date": simulation["effective_start_date"],
+        "effective_end_date": simulation["effective_end_date"],
+        "units": {
+            "final_pnl": "USD",
+            "return_pct": "percentage points",
+            "max_drawdown_pct": "positive loss in percentage points",
+        },
+        "summary": simulation["summary"],
+        "events": simulation["events"],
+        "assumptions": simulation["assumptions"],
+        "data_metadata": metadata,
+    }
 
 
 def explain_simulation(

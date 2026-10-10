@@ -22,7 +22,7 @@ Confirm the interface says **Unverified cache** and shows the 2011–2026 covera
 
 ## Reference output: 2022 defaults
 
-These are conditional sensitivities using **unverified legacy cash quotes**, not verified historical financing. See the [remediation table](integrity-remediation.md) and [evidence](review/evidence-remediation.json). Research uses excess returns and zero-mean variation. Simulation/search expose cash overrides, funding/rebate spreads, trading costs, proxy beta/basis, assumed capacity and equity cutoffs. No broker margin, actual holdings or executable pricing has been supplied.
+These are conditional sensitivities using **unverified legacy cash quotes**, not verified historical financing. See the [remediation table](integrity-remediation.md) and [evidence](reviews/evidence/evidence-remediation.json). Research uses excess returns and zero-mean variation. Simulation/search expose cash overrides, funding/rebate spreads, trading costs, proxy beta/basis, assumed capacity and equity cutoffs. No broker margin, actual holdings or executable pricing has been supplied.
 
 | Strategy | Final portfolio P/L | Return | Maximum drawdown |
 | --- | --- | --- | --- |

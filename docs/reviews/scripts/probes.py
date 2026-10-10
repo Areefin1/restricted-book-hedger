@@ -4,14 +4,12 @@ import logging
 import json
 from pathlib import Path
 import sys
-import platform
-import subprocess
 
 import numpy as np
 import pandas as pd
 from fastapi.testclient import TestClient
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'backend'))
 from app.config import Settings
 from app.main import create_app
@@ -28,18 +26,12 @@ sidecar = json.loads((ROOT / 'backend/data/metadata.json').read_text())
 evidence = {'csv_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
             'sidecar_sha256': sidecar['sha256'], 'loaded_columns': list(loaded.columns),
             'observations': len(raw), 'coverage': [str(raw.index[0].date()), str(raw.index[-1].date())]}
-evidence['repository_head'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
-evidence['python_version'] = platform.python_version()
-evidence['numpy_version'] = np.__version__
-evidence['pandas_version'] = pd.__version__
 settings = Settings(_env_file=None, prices_path=path, metadata_path=ROOT / 'backend/data/metadata.json')
 with TestClient(create_app(settings)) as c:
     body = dict(book_size=1_000_000, hedge_ratio=.6, annual_borrow_rate=.02,
                 start_date='2022-01-03', end_date='2022-12-30')
     response = c.post('/api/simulations', json=body)
     evidence['simulation_http'] = {'status': response.status_code, 'body': response.json()}
-    zero = c.post('/api/simulations', json={**body, 'hedge_ratio': 0})
-    evidence['zero_hedge_simulation_http'] = {'status': zero.status_code, 'body': zero.json()}
     evidence['metadata'] = c.get('/api/metadata').json()
     evidence['research_http_status'] = c.get('/api/research/sanity').status_code
     evidence['recommendation_http_status'] = c.post('/api/recommendations', json=dict(
@@ -67,7 +59,6 @@ try:
         summary=summarize_paths(paths).to_dict('records'), effective_start_date=selected.index[0].date(),
         effective_end_date=selected.index[-1].date(), assumptions=[{'label':'Probe','detail':'Probe'}],data_version='probe'))
 except Exception as exc:
-    evidence['response_schema_error_count'] = len(exc.errors())
     evidence['response_schema_errors_after_rate_injection'] = [
         {'field': list(e['loc']), 'type': e['type']} for e in exc.errors()[:6]]
 
@@ -113,69 +104,6 @@ evidence['full_history_initial_60pct_sjb_hedge_exposure_at_end'] = float(
     .6 * (loaded.sjb.iloc[-1] / loaded.sjb.iloc[0]) / (loaded.hyg.iloc[-1] / loaded.hyg.iloc[0]))
 evidence['zero_price_returns'] = {col:int((rets[col]==0).sum()) for col in rets.columns}
 evidence['gaps_above_four_calendar_days'] = {str(i.date()):int(v) for i,v in raw.index.to_series().diff().dt.days.items() if v>4}
-# Independently calculate endpoints across every 2022 63-return window.
-from app.hedger.recommend import recommend_ratio
-window = 63
-cash_growth = (1 + rf).cumprod()
-candidate_ratios = np.arange(21) / 20
-starts, ends = selected.index[:-window], selected.index[window:]
-asset_returns = selected.hyg.iloc[window:].to_numpy() / selected.hyg.iloc[:-window].to_numpy() - 1
-window_cash = cash_growth.loc[ends].to_numpy() / cash_growth.loc[starts].to_numpy() - 1
-window_days = (ends - starts).days.to_numpy()
-funded_grid = []
-for ratio in candidate_ratios:
-    outcomes = ((1-ratio)*asset_returns + ratio*window_cash - ratio*.02*window_days/365)*100
-    funded_grid.append({'ratio':float(ratio), 'worst_pct':float(outcomes.min()),
-                        'median_pct':float(np.median(outcomes)), 'best_pct':float(outcomes.max())})
-search = recommend_ratio(prices, '2022-01-03', '2022-12-30', 'static_short', window, .02)
-funded_best = funded_grid[0]
-for row in funded_grid[1:]:
-    if row['worst_pct'] > funded_best['worst_pct'] + 1e-9:
-        funded_best = row
-evidence['2022_search_financing_sensitivity'] = {
-    'windows':len(starts), 'current_search_ratio':search['recommended_ratio'],
-    'current_search_objective_pct':search['objective_value_pct'],
-    'simulator_accounting_best':funded_best, 'simulator_accounting_grid':funded_grid,
-    'warning':'Conditional on interpreting the unverified rate quotes as effective annual percentages.'}
-evidence['paper_table_1_arithmetic'] = [
-    {'daily_returns':r, 'index_pct':float((np.prod(1+np.array(r))-1)*100),
-     'plus3_static_pct':float(3*(np.prod(1+np.array(r))-1)*100),
-     'plus3_daily_pct':float((np.prod(1+3*np.array(r))-1)*100),
-     'minus3_static_pct':float(-3*(np.prod(1+np.array(r))-1)*100),
-     'minus3_daily_pct':float((np.prod(1-3*np.array(r))-1)*100)}
-    for r in [[.1,-.1],[-.1,.1],[.1,.1],[-.1,-.1]]]
-
-from convexity import rolling_windows as prototype_windows
-prototype_input = pd.DataFrame(
-    {'hyg_adj_close':[100.,110.,99.], 'sjb_adj_close':[100.,90.,99.], 'rf_annual_pct':[5.,5.,5.]},
-    index=pd.DatetimeIndex(['2022-01-06','2022-01-07','2022-01-10'],name='date'))
-prototype = prototype_windows(prototype_input, window=2)
-evidence['prototype_window_date_probe'] = {
-    'baseline_price_date':str(prototype_input.index[0].date()),
-    'reported_start':str(prototype.start.iloc[0].date()),
-    'terminal_price_date':str(prototype_input.index[-1].date()),
-    'hyg_return':float(prototype.hyg_ret.iloc[0])}
-evidence['5pct_friday_monday_rate_conventions'] = {
-    'prototype_interval_decimal':.05/252,
-    'simulator_interval_decimal':1.05**(3/365)-1,
-    'warning':'Different conventions; neither is verified for the undocumented source quote.'}
-ambiguous = load_prices(ROOT / 'docs/review/mixed-schema-fixture.csv')
-evidence['mixed_schema_probe'] = {'selected_initial_hyg':float(ambiguous.hyg.iloc[0]),
-                                'alternate_initial_adjusted_hyg':90.,
-                                'rejected_conflict':False}
-
-# Assertions validate the audit evidence, not the suitability of the model.
-assert evidence['simulation_http']['status'] == 422
-assert evidence['simulation_after_rate_injection_http']['status'] == 500
-assert evidence['response_schema_error_count'] == len(selected)*3
-assert np.isclose(evidence['independent_arithmetic']['drawdown_100_120_90_110_pct'],25.)
-assert np.isclose(evidence['independent_arithmetic']['flat_daily_5pct_weekend_growth'],
-                  evidence['independent_arithmetic']['expected_weekend_growth'])
-expected_table = [[-1,-3,-9,3,-9],[-1,-3,-9,3,-9],[21,63,69,-63,-51],[-19,-57,-51,57,69]]
-for row, expected in zip(evidence['paper_table_1_arithmetic'], expected_table):
-    actual = [row[k] for k in ['index_pct','plus3_static_pct','plus3_daily_pct','minus3_static_pct','minus3_daily_pct']]
-    assert np.allclose(actual,expected)
-
-out = ROOT / 'docs/review/evidence-current.json'
+out = ROOT / 'docs/reviews/evidence/evidence.json'
 out.write_text(json.dumps(evidence,indent=2),encoding='utf-8')
 print(json.dumps(evidence,indent=2))

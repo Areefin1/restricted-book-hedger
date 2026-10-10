@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from convexity import rolling_windows, theory_curve
+from research.convexity import rolling_windows, theory_curve
 
 def make_prices(hyg_rets, sjb_rets, start=100.0, rf_pct=0.0):
     """Build a price table (same columns as data.py) from chosen daily returns."""

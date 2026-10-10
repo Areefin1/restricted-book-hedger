@@ -15,7 +15,7 @@ from app.hedger.convexity import calculate_rolling_windows
 from app.hedger.recommend import recommend_ratio
 from app.hedger.sanity import run_sanity_check
 from app.main import create_app
-from convexity import rolling_windows
+from research.convexity import rolling_windows
 
 
 def fixture(rows=23):
