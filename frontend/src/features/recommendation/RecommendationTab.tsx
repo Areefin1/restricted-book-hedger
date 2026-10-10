@@ -110,7 +110,7 @@ export function RecommendationTab({ startDate, endDate, annualBorrowRate, datesV
     <div className="stack">
       <Panel
         title="Historical hedge-ratio search"
-        subtitle="Optional feature in the team plan. Uses the date range and borrow rate from the controls above."
+        subtitle="Uses the date range and borrow rate from the controls above. Selection and evaluation use the same history."
         actions={
           <div className="toolbar">
             <Segmented

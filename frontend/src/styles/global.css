@@ -210,6 +210,25 @@ code {
   justify-items: start;
 }
 
+.sidebar-foot > span:last-child {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.source-row .badge {
+  max-width: 100%;
+  height: auto;
+  min-height: 22px;
+  padding: 2px 8px;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.effective {
+  overflow-wrap: anywhere;
+}
+
 .main {
   min-width: 0;
   display: flex;

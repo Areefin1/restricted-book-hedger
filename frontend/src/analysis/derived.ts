@@ -3,7 +3,7 @@
 // unchanged when the mock is replaced by the real API.
 
 import type { PathPoint, SimulationRequest, SimulationResponse, StrategyId } from '../api/types'
-import { TRADING_DAYS_PER_YEAR, annualizedVol, drawdownSeries, maxDrawdown, simpleReturns } from './metrics'
+import { calendarDays, annualizedVol, drawdownSeries, maxDrawdown, simpleReturns } from './metrics'
 
 export const STRATEGIES: StrategyId[] = ['unhedged', 'static_short_hedged', 'sjb_hedged']
 
@@ -28,7 +28,7 @@ export function seriesOf(paths: PathPoint[], k: StrategyId): number[] {
 export function strategyRisk(res: SimulationResponse, req: SimulationRequest): StrategyRisk[] {
   const dates = res.paths.map((p) => p.date)
   const unhedged = seriesOf(res.paths, 'unhedged')
-  const intervals = res.paths.length - 1
+  const elapsedDays = calendarDays(res.effective_start_date, res.effective_end_date)
   return STRATEGIES.map((k) => {
     const values = seriesOf(res.paths, k)
     const summary = res.summary.find((s) => s.strategy === k)
@@ -48,7 +48,7 @@ export function strategyRisk(res: SimulationResponse, req: SimulationRequest): S
       hedgePnl: finalValue - unhedged[unhedged.length - 1],
       borrowCost:
         k === 'static_short_hedged'
-          ? (req.hedge_ratio * req.book_size * req.annual_borrow_rate * intervals) / TRADING_DAYS_PER_YEAR
+          ? (req.hedge_ratio * req.book_size * req.annual_borrow_rate * elapsedDays) / 365
           : 0,
     }
   })

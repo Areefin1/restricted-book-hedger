@@ -12,10 +12,10 @@ export function SummaryTable({ rows, detailed = false }: { rows: StrategyRisk[];
           <tr>
             <th scope="col">Strategy</th>
             <th scope="col" className="r">
-              Ending value <InfoTip text={GLOSSARY.portfolioValue} label="About ending value" />
+              Total ending value <InfoTip text={GLOSSARY.portfolioValue} label="About total ending value" />
             </th>
             <th scope="col" className="r">
-              Final P/L <InfoTip text={GLOSSARY.pnl} label="About final P/L" />
+              Portfolio P/L <InfoTip text={GLOSSARY.pnl} label="About portfolio P/L" />
             </th>
             <th scope="col" className="r">Return</th>
             <th scope="col" className="r">

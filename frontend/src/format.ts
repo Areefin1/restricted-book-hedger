@@ -20,10 +20,12 @@ export function fmtSignedUsd(v: number): string {
 
 /** Percentage points in, e.g. 5.234 -> "5.23%". */
 export function fmtPct(pp: number, digits = 2): string {
+  if (!Number.isFinite(pp)) return 'n/a'
   return `${pp.toFixed(digits)}%`
 }
 
 export function fmtSignedPct(pp: number, digits = 2): string {
+  if (!Number.isFinite(pp)) return 'n/a'
   const s = Math.abs(pp).toFixed(digits)
   if (Number(s) === 0) return `${s}%`
   return pp > 0 ? `+${s}%` : `-${s}%`

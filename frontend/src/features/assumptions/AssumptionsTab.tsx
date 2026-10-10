@@ -22,7 +22,7 @@ const LIMITS: Assumption[] = [
   { label: 'Simplified short', detail: 'A comparison of return series, not an executable short-trade ledger (no recalls, margin, or dividends owed).' },
   { label: 'Historical only', detail: 'Results describe what would have happened in a past window. They do not predict future performance.' },
   { label: 'In-sample search', detail: 'The ratio search selects and evaluates on the same history. No out-of-sample test has been run.' },
-  { label: 'Provisional presets', detail: 'Scenario dates are placeholders until validated by the simulator owner.' },
+  { label: 'Preset selection', detail: 'Stress presets cover stated periods; the choppy period is selected by an explicit in-sample volatility rule. The preset selector displays its rule.' },
 ]
 
 function List({ items }: { items: Assumption[] }) {
@@ -43,7 +43,7 @@ export function AssumptionsTab({ meta, assumptions, apiMode }: Props) {
     <div className="stack">
       <Panel title="Data source" subtitle="Where every number in this prototype comes from.">
         <div className="source-row">
-          {meta?.is_synthetic ? <Badge tone="warn">Synthetic sample data</Badge> : <Badge tone="accent">Cached price data</Badge>}
+          {!meta ? <Badge>Connecting</Badge> : meta.is_synthetic ? <Badge tone="warn">Synthetic sample data</Badge> : <Badge tone="accent">Cached price data</Badge>}
           <Badge>{apiMode === 'mock' ? 'In-browser mock API' : 'HTTP API'}</Badge>
           {meta && <Badge>{meta.data_version}</Badge>}
         </div>
@@ -51,25 +51,22 @@ export function AssumptionsTab({ meta, assumptions, apiMode }: Props) {
           <>
             <p>{meta.provenance}</p>
             <p className="muted">
-              {fmtDate(meta.first_date)} – {fmtDate(meta.last_date)} · {meta.trading_days.toLocaleString()} trading days (weekday
-              calendar)
+              {fmtDate(meta.first_date)} – {fmtDate(meta.last_date)} · {meta.trading_days.toLocaleString()} shared observations
             </p>
           </>
         ) : (
           <p className="muted">Loading metadata…</p>
         )}
-        <p className="fine">
-          The mock layer (<code>src/mock</code> and <code>src/analysis</code>) mirrors the response shapes in the team plan so it
-          can be replaced by the FastAPI service. Set <code>VITE_API_BASE_URL</code> to switch the client to HTTP. The Python
-          modules remain the authoritative calculations.
-        </p>
+        {meta?.notes?.map((note) => <p className="fine" key={note}>{note}</p>)}
+        {meta?.retrieved_at && <p className="fine">Retrieved: {meta.retrieved_at}</p>}
+        {meta?.adjustment && <p className="fine">{meta.adjustment}</p>}
       </Panel>
 
       <div className="grid-2">
         <Panel title="Simulation assumptions" subtitle="Returned with each simulation response.">
           {assumptions ? <List items={assumptions} /> : <p className="muted">Run a simulation to see its assumptions.</p>}
         </Panel>
-        <Panel title="Units and conventions" subtitle="From the shared contract in docs/team-plan.md.">
+        <Panel title="Units and conventions" subtitle="Money, dates, and percentage conventions used throughout the app.">
           <List items={UNITS} />
         </Panel>
       </div>
@@ -78,11 +75,10 @@ export function AssumptionsTab({ meta, assumptions, apiMode }: Props) {
         <List items={LIMITS} />
       </Panel>
 
-      <Panel title="Documentation status">
+      <Panel title="Research scope">
         <p>
-          <code>docs/api-contract.md</code> and <code>docs/methodology.md</code> are currently empty. Types and calculations here
-          follow the shared contracts and modeling decisions in <code>docs/team-plan.md</code>. Fields marked “proposed” in{' '}
-          <code>src/api/types.ts</code> need team agreement.
+          This is an empirical comparison of observed return series. It does not establish that daily resetting alone causes
+          the observed gap, replicate an academic paper, or establish suitability for a particular restricted portfolio.
         </p>
       </Panel>
     </div>
