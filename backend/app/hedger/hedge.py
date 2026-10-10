@@ -42,7 +42,6 @@ def simulate_hedges(
         - Static HYG short earns the risk-free rate on
           its initial short-sale collateral.
         - Static HYG short pays a separate gross annual borrow fee.
-        - SJB purchase is financed at the risk-free rate.
         - Initial hedge positions are not rebalanced.
         - No additional ETF expense deduction is applied.
 
@@ -228,11 +227,6 @@ def simulate_hedges(
         risk_free_growth - 1
     )
 
-    # Cost of financing the initial SJB purchase.
-    sjb_financing_cost = initial_hedge * (
-        risk_free_growth - 1
-    )
-
     # -----------------------------
     # 7. Calculate HYG borrowing fees
     # -----------------------------
@@ -268,7 +262,6 @@ def simulate_hedges(
             "sjb_hedged": (
                 unhedged
                 + sjb_pnl
-                - sjb_financing_cost
             ),
         },
         index=prices.index.copy(),
