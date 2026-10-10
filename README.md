@@ -1,4 +1,4 @@
-# Restricted Book Hedger
+# HedgeLab: Bond Portfolio Risk Simulator
 
 A React and FastAPI research application for comparing an HYG-proxy bond portfolio with a static short hedge and a funded, buy-and-hold SJB position. Explore historical performance, hedge mechanics, financing assumptions, and the differences between a static hedge and a daily-reset inverse ETF.
 
