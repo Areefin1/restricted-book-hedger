@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { api } from './api/client'
 import type { SimulationRequest, SimulationResponse } from './api/types'
 import { SimulationForm } from './components/SimulationForm'
+import { HedgeChat } from './components/HedgeChat'
 import { Badge, ErrorState, Loading } from './components/ui'
 import { AssumptionsTab } from './features/assumptions/AssumptionsTab'
 import { RecommendationTab } from './features/recommendation/RecommendationTab'
@@ -265,6 +266,14 @@ export default function App() {
           </footer>
         </main>
       </div>
+      <HedgeChat
+        req={sim.data?.req}
+        dataVersion={sim.data?.res.data_version}
+        disabledReason={api.mode === 'mock' ? 'AI chat is unavailable in synthetic mock mode.'
+          : hasErrors ? 'Fix the highlighted simulation inputs to continue.'
+          : sim.error ? 'Refresh the simulation before continuing.'
+          : updating || sim.stale || !sim.data ? 'Waiting for the current simulation…' : ''}
+      />
     </div>
   )
 }

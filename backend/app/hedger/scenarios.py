@@ -20,7 +20,7 @@ def build_scenarios(prices: pd.DataFrame) -> list[dict]:
                                   end_date=selected.index[-1].strftime("%Y-%m-%d"), rule=rule))
     # The preset selects on total proxy returns, independently of cash inputs.
     windows = calculate_rolling_windows(prices.assign(rf_return=0.0), 126)
-    candidates = windows.loc[windows.hyg_total_return.abs() <= 0.02]
+    candidates = windows.loc[windows["hyg_return"].abs() <= 0.02]
     for scenario in scenarios:
         candidates = candidates.loc[~((candidates.start_date <= scenario["end_date"]) & (candidates.end_date >= scenario["start_date"]))]
     if not candidates.empty:

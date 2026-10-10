@@ -12,3 +12,6 @@ yfinance==1.7.0
 # Backend and API Testing
 pytest==9.1.1
 httpx==0.28.1
+
+# Gemini explanations
+google-genai==2.29.0

@@ -46,4 +46,11 @@ export const mockApi: HedgerApi = {
   getSanity: () => respond(() => runSanityCheck(prices, version)),
   getConvexity: (w) => respond(() => calculateRollingWindows(prices, w, version)),
   getRecommendation: (req) => respond(() => recommendRatio(prices, req, version)),
+  getExplanation: () =>
+  Promise.reject(
+    new ApiRequestError(
+      'AI_UNAVAILABLE',
+      'AI explanations are unavailable in synthetic mock mode.',
+    ),
+  ),
 }

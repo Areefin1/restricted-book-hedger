@@ -16,6 +16,8 @@ import type {
   Scenario,
   SimulationRequest,
   SimulationResponse,
+  ExplanationRequest,
+  ExplanationResponse,
 } from './types'
 
 export interface HedgerApi {
@@ -23,6 +25,7 @@ export interface HedgerApi {
   getMetadata(): Promise<Metadata>
   getScenarios(): Promise<Scenario[]>
   runSimulation(req: SimulationRequest): Promise<SimulationResponse>
+  getExplanation(req: ExplanationRequest): Promise<ExplanationResponse>
   getSanity(): Promise<SanityResponse>
   getConvexity(windowDays: number): Promise<ConvexityResponse>
   getRecommendation(req: RecommendationRequest): Promise<RecommendationResponse>
@@ -52,6 +55,7 @@ function httpApi(baseUrl: string): HedgerApi {
     getMetadata: () => request('/api/metadata'),
     getScenarios: () => request('/api/scenarios'),
     runSimulation: (req) => post('/api/simulations', req),
+    getExplanation: (req) => post<ExplanationResponse>('/api/explanations', req),
     getSanity: () => request('/api/research/sanity'),
     getConvexity: (w) => request(`/api/research/convexity?window_days=${w}`),
     getRecommendation: (req) => post('/api/recommendations', req),

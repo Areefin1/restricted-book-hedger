@@ -8,6 +8,7 @@ import { Panel } from '../../components/ui'
 import { fmtPct, fmtSignedPct, fmtSignedUsd, fmtUsd, fmtUsdCompact, signClass } from '../../format'
 import { GLOSSARY } from '../../glossary'
 import { STRATEGY_META } from '../../theme'
+import { ExplanationPanel } from '../../components/ExplanationPanel'
 
 function rowsFor(
   risks: StrategyRisk[],
@@ -78,7 +79,11 @@ export function SimulatorTab({ req, res }: { req: SimulationRequest; res: Simula
           footnote="Peak-to-trough loss, shown as a positive number."
         />
       </div>
-
+      <ExplanationPanel
+        key={JSON.stringify([req, res.data_version])}
+        req={req}
+        dataVersion={res.data_version}
+      />
       <Panel title="Portfolio performance" subtitle="Daily total portfolio value and profit / loss relative to starting capital.">
         <PortfolioChart paths={res.paths} bookSize={req.book_size} />
       </Panel>

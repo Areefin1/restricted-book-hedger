@@ -173,3 +173,18 @@ export interface RecommendationResponse {
   assumptions: Assumption[]
   data_version: string
 }
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ExplanationRequest extends SimulationRequest {
+  question?: string
+  history?: ChatMessage[]
+}
+
+export interface ExplanationResponse {
+  explanation: string
+  data_version: string
+}
