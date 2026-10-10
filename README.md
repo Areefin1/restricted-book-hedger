@@ -4,6 +4,8 @@ A working React/FastAPI research demo comparing an HYG-proxy bond book with a fi
 
 Educational historical analysis. HYG is a proxy, financing and trading costs are simplified, and the app does not execute trades or determine whether a hedge is permissible for a restricted portfolio.
 
+The [P0/P1 remediation table](docs/integrity-remediation.md) records fixes and remaining data requirements. Simulation and search share matched cash financing, assumed spreads/trading costs, proxy stresses, capacity limits and equity cutoffs. Research uses excess returns and zero-mean realized variation. Bundled prices and cash quotes remain **unverified legacy inputs**, labeled in the interface. No actual holdings or broker terms have been supplied.
+
 ## Run the demo
 
 Verified development environment: Python 3.13, Node.js 24, npm 11. Install dependencies once from the repository root:
@@ -56,10 +58,10 @@ Optional: copy `backend/.env.example` to `backend/.env`. Supported settings are 
 Refresh the cache explicitly (requires provider access):
 
 ```powershell
-python backend/scripts/download_prices.py
+python backend/scripts/download_prices.py --cash-returns-csv path/to/cash.csv --cash-source "Provider, retrieval date, return convention and alignment"
 ```
 
-The downloader uses yfinance with `auto_adjust=False`, retains raw and adjusted closes, removes rows missing either fund, validates staged prices before replacing the cache, and writes provenance. `--start YYYY-MM-DD` and `--end YYYY-MM-DD` bound the download; end is exclusive. Never refresh during a rehearsal. To identify an existing legacy cache without downloading:
+The refresher requires a local `date,rf_return` CSV of decimal cash returns over intervals ending on every retained ETF date. Convert/compound source inputs to that convention before import; see [methodology](docs/methodology.md). Missing cash dates are rejected. Parsed provider output and supplied cash bytes are archived by hash. No provider download was performed during remediation. The downloader uses yfinance with `auto_adjust=False`, retains raw and adjusted closes, removes rows missing either fund, validates staged prices before replacing the cache, and writes provenance. `--start YYYY-MM-DD` and `--end YYYY-MM-DD` bound the download; end is exclusive. Never refresh during a rehearsal. To identify an existing legacy cache without downloading:
 
 ```powershell
 python backend/scripts/download_prices.py --describe-existing
@@ -70,13 +72,13 @@ This overwrites the provenance sidecar with an honest legacy-cache description. 
 ## Verification
 
 ```powershell
-python -m pytest backend/tests
+python -m pytest
 npm --prefix frontend run lint
 npm --prefix frontend run build
 npm --prefix frontend run test:e2e
 ```
 
-Run backend tests from `backend/` with `python -m pytest`, or use the root command above (configured by `pytest.ini`). The browser suite builds the frontend, starts an isolated API server on port 8765, and checks desktop/mobile views, scenario switching, calculations displayed from HTTP responses, research charts, ratio search, and invalid-input recovery. It uses installed Edge on Windows. On other systems install the test browser with `npx playwright install chromium` from `frontend/`. Set `BROWSER_CHANNEL=chrome` to use installed Chrome. Set `HEDGER_PYTHON` if tests need a particular Python executable.
+Run the root command above to include API tests and the standalone convexity prototype (configured by `pytest.ini`). The browser suite builds the frontend, starts an isolated API server on port 8765, and checks desktop/mobile views, scenario switching, calculations displayed from HTTP responses, research charts, ratio search, and invalid-input recovery. It uses installed Edge on Windows. On other systems install the test browser with `npx playwright install chromium` from `frontend/`. Set `BROWSER_CHANNEL=chrome` to use installed Chrome. Set `HEDGER_PYTHON` if tests need a particular Python executable.
 
 ## API and documentation
 

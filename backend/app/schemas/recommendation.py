@@ -6,16 +6,17 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schemas.research import WindowDays
-from app.schemas.simulation import Assumption, FiniteNumber, SimulationRequest
+from app.schemas.simulation import Assumption, FiniteNumber, SimulationRequest, ModelingOptions
 
 
-class RecommendationRequest(BaseModel):
+class RecommendationRequest(ModelingOptions):
     model_config = ConfigDict(extra="forbid")
     start_date: date
     end_date: date
     instrument: Literal["static_short", "sjb"]
     window_days: WindowDays = 63
     annual_borrow_rate: FiniteNumber = Field(ge=0, le=0.25)
+    book_size: FiniteNumber = Field(default=1_000_000, gt=0, le=50_000_000_000)
 
     @field_validator("start_date", "end_date", mode="before")
     @classmethod
@@ -37,6 +38,7 @@ class RatioGridRow(BaseModel):
 
 
 class RecommendationResponse(BaseModel):
+    window_days: WindowDays
     instrument: Literal["static_short", "sjb"]
     objective: str
     recommended_ratio: FiniteNumber

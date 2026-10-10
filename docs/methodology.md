@@ -1,61 +1,69 @@
 # Methodology
 
-This demo compares observed adjusted return series. It models the locked bond book with HYG and compares fixed initial short-HYG and long-SJB hedge exposures. It does not execute trades or establish legal permission, portfolio suitability, or future protection.
+This paper-inspired research demo compares adjusted HYG/SJB return series. HYG is the example restricted book. It does not replicate the paper's equity dataset or model executable fixed-share trades. See the [remediation table](integrity-remediation.md) for resolved defects and outstanding data requirements.
 
-## Data and reproducibility
+## Data and cash inputs
 
-The checked-in cache has 3,912 common observations, March 22, 2011 through October 9, 2026. Analytical prices are `hyg_adj_close` and `sjb_adj_close`; raw closes are retained for inspection. Adjusted prices approximate returns including distributions and corporate actions rather than executable trade prices. The downloader requests `auto_adjust=False` and explicitly selects adjusted closes, drops incomplete paired observations, and does not forward fill.
+The bundled cache has 3,912 shared observations, March 22, 2011–October 9, 2026. Its identity is `sha256:49468ede28065fd6492c0ef54488ae34cd0a49367e2a8da8fd8889bcaef503dc`. Prices and historical cash quotes remain **unverified**; the original provider responses, adjustment verification and retrieval time were not recorded. Updating the matching sidecar does not establish market accuracy. No price bytes were changed by the remediation.
 
-The loader rejects duplicate dates, missing/nonfinite/nonpositive prices, and malformed required columns; it sorts dates. Shared observations need not form a complete exchange calendar. The cache hash identifies exact input bytes; metadata provenance is used only when its recorded hash matches. The legacy retrieval timestamp is unknown. This validates file structure and reproducibility, not the accuracy of the original provider response. Explicit refreshes record provider and retrieval settings and time. Normal requests require no internet connection.
+`hyg_adj_close`/`sjb_adj_close` (or `hyg`/`sjb`) are analytical adjusted return series. Raw closes are retained for inspection. The loader rejects conflicting aliases, duplicate dates/columns, and missing, nonfinite or nonpositive prices. It sorts dates without forward filling. Exchange-calendar completeness, corporate actions and independent vendor reconciliation remain open.
 
-## Portfolio accounting
+One helper, `funding.py`, defines cash intervals throughout the API and standalone prototype:
 
-Let B be starting book value, h the initial hedge ratio, H(t) and J(t) adjusted HYG/SJB prices, and r the annual borrow rate. Define R_H(t) = H(t)/H(0) - 1, R_J(t) = J(t)/J(0) - 1, and d(t) actual elapsed calendar days from inception.
+1. An explicit `annual_cash_rate` overrides the cache and assumes a constant effective annual decimal rate: `(1+r)^(elapsed calendar days/365)-1` per interval.
+2. Otherwise `rf_return` is the decimal return over the interval ending at each observation. No annual-yield conversion or extra weekend accrual is applied.
+3. Otherwise legacy `rf_annual_pct` is interpreted **only as an unverified assumption**: previous observation's effective annual percentage over actual/365. This is not a verified Treasury, discount-yield or broker convention.
 
-- Unhedged value: `B * (1 + R_H(t))`.
-- Static-short-hedged value: `B * (1 + R_H(t)) - h*B*R_H(t) - h*B*r*d(t)/365`.
-- SJB-hedged value: `B * (1 + R_H(t)) + h*B*R_J(t)`.
-- Portfolio P/L: total value minus B.
+The first observation starts the holding period and accrues zero. Negative rates above -100% are supported. Missing cash inputs never silently become zero. A price-only cache supports health/metadata and simulations/searches with an explicit cash assumption; cached research returns 422 until cash data exists. Synthetic mock data explicitly assumes zero cash.
 
-All strategies start at B; both hedges have fixed initial exposure hB. The SJB purchase is offset by a financing account with zero interest. The investor does not rebalance either hedge during a simulation. SJB's internal daily resetting is reflected in its observed prices.
+The refresher now requires a local cash CSV and source description. The file must contain `date,rf_return`, with a finite decimal return above -1 for every retained ETF date. Convert any source yield into returns using its actual quote basis and availability timing before import. If ETF dates skip source sessions, compound source returns across those sessions; do not assume missing dates are zero or forward fill. The importer rejects missing dates. Parsed provider output and exact supplied cash bytes are archived by hash; parsed output is not an original HTTP response. Provenance remains unverified pending independent checks.
 
-The static short is negative adjusted HYG returns on an initial notional, a simplified analytical approximation rather than a fixed-share executable short ledger with separate distribution payments. Borrow is simple actual/365 fixed accrual on the initial notional, including weekends and holidays, with zero cost at inception. Short proceeds earn no interest. Embedded fund expenses are not deducted a second time. Spreads, commissions, margin, recalls, financing costs, liquidity, and institution-specific taxes are omitted. Ratio zero makes both hedged paths equal the book; ratio one makes the static path flat before borrow costs.
+## Equal-equity investor overlays
 
-## Metrics
+Let B be initial equity, h the initial hedge ratio, n=hB, H and J the adjusted HYG/SJB growth factors, G the compounded cash growth factor, and t actual calendar years since inception. Let b be assumed book beta and a annual additive basis stress. The underlying book is `Q=B*[1+b*(H-1)+a*t]`; default b=1, a=0 follows HYG. These are simple sensitivities, not estimated holdings, DV01, CS01, coupon, default or recovery models.
 
-`final_pnl = final_value - initial_value`. `return_pct = 100*(final_value/initial_value - 1)`. For running peak P(t), `max_drawdown_pct = 100*max(1 - value(t)/P(t))`. Drawdown is a positive loss magnitude; it can exceed 100% if a financed modeled portfolio goes negative. Final loss and drawdown answer different questions.
+Let f be the continuous annual funding spread, s the continuous annual rebate haircut, r the simple annual borrow fee, and c round-trip trading cost in basis points. Define `F=G*exp(f*t)`, `R=G*exp(-s*t)` and `C=n*c/10000` after inception (zero at inception).
 
-Frontend risk views derive peak/trough dates, daily returns, worst day, and annualized volatility from the API paths. Volatility uses sample standard deviation (`ddof=1`) of daily simple returns times sqrt(252). Fewer than two daily returns or undefined returns produce unavailable volatility, displayed as `n/a`. The displayed short borrow amount uses the same actual/365 formula as Python. Hedge P/L in the summary is the incremental portfolio result after modeled borrow costs.
+| Strategy | Modeled total equity before cutoff |
+| --- | --- |
+| Unhedged | `Q` |
+| Static negative-return overlay | `Q - n*(H-1) + n*(R-1) - n*r*t - C` |
+| Buy-and-hold SJB overlay | `Q + n*(J-1) - n*(F-1) - C` |
 
-## Daily sanity check
+Each path starts at B; cumulative P/L equals value minus B. Short proceeds earn modeled cash less the rebate haircut; the SJB purchase pays cash plus the funding spread. This also represents opportunity cost when financed from available cash. Borrow fees are separate from rebate haircuts: do not enter the same net financing charge twice. Cash accounts compound; borrow remains a constant simple fee on initial notional. Both simulation and every fresh search window use the same formulas and cutoff. Frontend mock calculations use the same definitions and are checked against the real API with nonzero financing/stresses.
 
-Daily returns are `price(t)/price(t-1) - 1`. OLS fits `SJB return = intercept + beta * HYG return + residual`. The API reports beta, daily intercept, correlation, R-squared, observations, and all points. At least three daily returns and nonzero variance in both series are required; otherwise diagnostics are null with a note.
+ETF expenses and distribution economics are embedded in adjusted returns and are not subtracted again. Negative reinvested HYG return differs from a fixed-share short with cash distribution liabilities. The model does not maintain share counts or a dividend-payment ledger. Hypothetical round-trip cost is charged once on initial notional after inception; it is not observed execution or continuously accumulated turnover.
 
-HYG is a comparison proxy; the two funds have benchmark and implementation differences. A beta near -1 indicates inverse co-movement and does not prove exact target delivery. The intercept includes benchmark differences, expenses, tracking, and noise. Multiplying it by 252 is an illustrative annualized diagnostic, not an estimate of a fund's exact fee.
+## Capacity, termination and exposure drift
 
-## Rolling-window comparison
+`max_hedge_notional`, when supplied, caps initial n. Simulation rejects an excess; search omits infeasible grid ratios using actual book size. A blank limit means capacity is **unverified**, not infinite market liquidity. No quotes, NAV, ADV, participation, premium/discount or nonlinear market impact are inferred.
 
-Permitted windows are 21, 63, and 126 trading return intervals. N intervals require N+1 price observations, and a cache with M prices yields max(0, M-N) overlapping windows. Window returns are endpoint adjusted-price ratios minus one. HYG realized volatility uses the N daily returns in that same window, sample standard deviation, and sqrt(252).
+Each strategy freezes at the first closing value at or below `termination_floor*B`, retaining closing overshoot. Default floor zero prevents a negative-equity path from later recovering in the research output. Events identify strategy and date. This is a conservative research cutoff, **not broker margin, an executable liquidation price, or permission to sell a restricted book**. Intraday margin, borrow recalls, changing marked borrow fees, derivative counterparty exposure and actual collateral schedules remain open. Stress the floor, cash/borrow costs, proxy beta and basis rather than assuming that a terminal payoff was accessible.
 
-The scatter plots SJB cumulative return against HYG cumulative return, colored by annualized HYG volatility. The line `y = -x` is a static short reference **before borrow costs**. A point's vertical gap is `SJB return + HYG return`. Volatility terciles sort windows and split into approximately equal counts, reporting descriptive means and share of positive gaps.
+Daily hedge/book diagnostics are `h*H/(Q/B)` and `h*J/(Q/B)`. They are modeled return-series exposure ratios excluding cash, not measured index beta or holdings-based residual risk. A ratio is unavailable when the underlying book is nonpositive or that strategy has terminated. Initial investments are held; the investor does not rebalance. SJB's internal daily reset does not maintain the investor's hedge ratio. No maintained-exposure strategy is claimed.
 
-Windows overlap and are highly dependent. Counts do not represent independent experiments. Differences in benchmark exposure, distributions, tracking, and expenses affect the observed gap alongside daily compounding. The chart does not identify causal effects of resetting or establish a theoretical convexity curve.
+## Performance metrics and mechanics
 
-## Presets
+`final_pnl=final_value-B`; `return_pct=100*(final_value/B-1)`; `max_drawdown_pct=100*max(1-value/running_peak)`. Drawdown can exceed 100% when a closing loss overshoots zero. Portfolio-risk volatility is sample standard deviation of daily equity returns times sqrt(252); undefined returns after nonpositive equity and insufficient observations display `n/a`. Borrow display stops at that strategy's cutoff. Frozen periods are included in reported paths.
 
-- **2020 stress:** February 3?June 30, 2020, covering the selloff and initial recovery. This is a stated broad period, not an optimized peak-to-trough selection.
-- **2022 drawdown:** calendar 2022, resolving to January 3?December 30 in this cache.
-- **Choppy period:** among 126-interval windows with absolute net HYG return <= 2%, choose the highest realized HYG volatility, excluding windows overlapping the two stress presets. Earliest window wins equal volatility. Selection is in-sample, so this preset illustrates a rule rather than unbiased evidence.
-- **Full history:** all common cache dates.
+Mechanics uses separately returned **instrument total returns**, not funded hedge P/L or the stressed proxy book. Its negative-HYG line is explicitly a zero-carry reference before financing and costs. It remains available at hedge ratio zero.
 
-All presets return actual cached dates. In shorter custom caches, unavailable stress presets and an unavailable choppy preset are omitted. Custom requested boundaries resolve inward and effective dates are displayed.
+## Excess-return research and paper volatility
 
-## Historical ratio search
+Daily OLS regresses `SJB daily total return - interval cash return` on `HYG daily total return - interval cash return`. Degenerate fits return null. Annualized intercept is daily intercept times 252, a descriptive diagnostic rather than an expense estimate. HYG is a tradable proxy, not the exact underlying index. Cached research uses cache cash inputs; simulation's constant-rate override does not rewrite the research cache.
 
-For each candidate ratio 0, 0.05, ..., 1, independently simulate the ending portfolio return for every selected rolling window with a fresh hedge. Choose the ratio maximizing the minimum ending return, with ties within 1e-9 percentage points favoring the smaller ratio. Short costs use each window's actual elapsed days / 365. Show worst, median, and best outcomes to expose upside tradeoffs.
+For each N-interval window, compound the asset and cash separately. Research `hyg_return` and `sjb_return` are **asset compounded total return minus cash compounded return**, not compounded daily excess returns. Separate `*_total_return` and `cash_return` fields preserve the decomposition. `hyg_realized_vol=sqrt(sum(daily HYG excess return²)*252/N)` is zero-mean annualized realized variation. `hyg_sample_vol` separately reports demeaned sample excess volatility. Constant trends therefore retain variation under the zero-mean measure. N intervals use N+1 prices; M prices yield max(0,M-N) windows. Supported N: 21, 63, 126.
 
-This objective is not within-window maximum drawdown minimization. The optimum may lie at the full-hedge boundary. Selection and evaluation use the same data (`in_sample=true`); there is no holdout or claim of out-of-sample performance. Search results are descriptive historical optimizations, not investment instructions.
+On excess-return axes, `y=-x` is the no-rebalance **funded** inverse benchmark before costs: a $1 position has $2 in cash minus $1 of HYG, total return `2G-H-1`, excess return `G-H`. This is distinct from the app's investor overlay. The standalone `backend/convexity.py` uses this funded definition and the same cash helper/zero-mean excess variation. Its continuous theory curve accepts a cash growth factor for consistent carry; an optional continuous-rate illustration is separately identified. Daily discrete and continuous ideal-reset curves are theoretical comparisons, not actual SJB execution.
 
-## Research scope and limitations
+Window counts are not independent sample sizes. Volatility terciles and gap averages are descriptive. Benchmark timing, tracking, distributions and expenses also affect the gap; these charts do not isolate a causal reset effect.
 
-The proposal's cited academic paper and theoretical formulas have not been independently verified for this implementation. No theoretical overlay or formal replication claim is included. The app reports empirical results without asserting that one instrument universally outperforms another. Institutional extension would require actual portfolio exposures, verified licensed data, exposure/basis modeling, financing/liquidity assumptions, independent validation, and appropriate access controls.
+## Presets and search
+
+2020 stress covers February 3–June 30; 2022 covers the calendar year resolved inward. The choppy rule selects the highest zero-mean **total-return** volatility among 126-interval windows with absolute HYG total return at most 2%, excluding the stress presets. It deliberately uses total returns so financing assumptions cannot change the scenario. Earliest tied window wins. Selection is in-sample.
+
+Search tests h=0,.05,…,1 within the capacity limit. Each overlapping window starts fresh, applies all cash/cost/proxy/cutoff assumptions, and contributes ending equity return. The highest worst-window return wins; ties within 1e-9 percentage points favor the smaller ratio. This is a grid optimum for terminal loss, not minimum drawdown, a continuous optimum or an out-of-sample result. Returned window length identifies the displayed result; stale results cannot be applied while inputs update.
+
+## Portfolio-specific use remains open
+
+A real portfolio normally comes from a brokerage/custodian holdings export or portfolio system: identifiers, quantities, currency, value and cash flows. Separate interest-rate and spread exposures, concentration, defaults, optionality and FX must be modeled. Broker funding, rebate, borrow and collateral terms come from the relevant account/rate schedule. Assumptions support research sensitivities; they cannot validate feasibility or protection for a particular book. Verified cash/market data, actual holdings and broker terms remain team actions in the remediation table.

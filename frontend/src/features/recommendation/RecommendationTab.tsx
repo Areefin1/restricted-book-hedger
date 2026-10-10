@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Data } from 'plotly.js'
 import { api } from '../../api/client'
-import type { HedgeInstrument, RecommendationRequest, RecommendationResponse } from '../../api/types'
+import type { HedgeInstrument, ModelingOptions, RecommendationRequest, RecommendationResponse } from '../../api/types'
 import { PERMITTED_WINDOWS } from '../../analysis/research'
 import { Plot } from '../../components/Plot'
 import { Badge, ErrorState, InfoTip, Loading, Panel, Segmented } from '../../components/ui'
@@ -79,6 +79,7 @@ function GridChart({ rec }: { rec: RecommendationResponse }) {
 }
 
 interface Props {
+  modelingOptions: ModelingOptions & { book_size?: number }
   startDate: string
   endDate: string
   annualBorrowRate: number
@@ -86,11 +87,12 @@ interface Props {
   onApply: (ratio: number) => void
 }
 
-export function RecommendationTab({ startDate, endDate, annualBorrowRate, datesValid, onApply }: Props) {
+export function RecommendationTab({ startDate, endDate, annualBorrowRate, datesValid, onApply, modelingOptions }: Props) {
   const [instrument, setInstrument] = useState<HedgeInstrument>('sjb')
   const [windowDays, setWindowDays] = useState<number>(63)
 
   const req: RecommendationRequest = {
+    ...modelingOptions,
     start_date: startDate,
     end_date: endDate,
     instrument,
@@ -99,6 +101,7 @@ export function RecommendationTab({ startDate, endDate, annualBorrowRate, datesV
   }
   const key = useDebounced(datesValid ? JSON.stringify(req) : null, 250)
   const rec = useResource(key, () => api.getRecommendation(JSON.parse(key as string) as RecommendationRequest))
+  const updating = rec.stale || rec.loading || key !== JSON.stringify(req) || !datesValid
 
   const tradeoffRows = useMemo(() => {
     if (!rec.data) return []
@@ -110,7 +113,7 @@ export function RecommendationTab({ startDate, endDate, annualBorrowRate, datesV
     <div className="stack">
       <Panel
         title="Historical hedge-ratio search"
-        subtitle="Uses the date range and borrow rate from the controls above. Selection and evaluation use the same history."
+        subtitle="Uses the date range, book size, funding and stress assumptions above. Selection and evaluation use the same history."
         actions={
           <div className="toolbar">
             <Segmented
@@ -144,7 +147,7 @@ export function RecommendationTab({ startDate, endDate, annualBorrowRate, datesV
         </div>
 
         {!datesValid ? (
-          <ErrorState message="Fix the date range in the controls above to run the search." />
+          <ErrorState message="Fix the highlighted controls above to run the search." />
         ) : rec.error && !rec.loading ? (
           <ErrorState message={rec.error} onRetry={rec.retry} />
         ) : !rec.data ? (
@@ -156,7 +159,7 @@ export function RecommendationTab({ startDate, endDate, annualBorrowRate, datesV
                 <span className="stat-label">Selected ratio · {INSTRUMENT_LABEL[rec.data.instrument]}</span>
                 <span className="rec-value num">{rec.data.recommended_ratio.toFixed(2)}</span>
                 <span className="muted">
-                  Worst {windowDays}-day window return at this ratio:{' '}
+                  Worst {rec.data.window_days}-day window return at this ratio:{' '}
                   <strong className={`num ${signClass(rec.data.objective_value_pct)}`}>
                     {fmtSignedPct(rec.data.objective_value_pct)}
                   </strong>
@@ -168,7 +171,7 @@ export function RecommendationTab({ startDate, endDate, annualBorrowRate, datesV
                 <span className="muted">
                   {fmtDate(rec.data.effective_start_date)} – {fmtDate(rec.data.effective_end_date)}
                 </span>
-                <button type="button" className="btn primary" onClick={() => onApply(rec.data!.recommended_ratio)}>
+                <button type="button" className="btn primary" disabled={updating} onClick={() => onApply(rec.data!.recommended_ratio)}>
                   Use {rec.data.recommended_ratio.toFixed(2)} in simulator
                 </button>
               </div>

@@ -5,7 +5,6 @@ import pandas as pd
 
 PERMITTED_WINDOWS = (21, 63, 126)
 
-
 def calculate_rolling_windows(prices: pd.DataFrame, window_days: int = 63) -> pd.DataFrame:
     if isinstance(window_days, bool) or window_days not in PERMITTED_WINDOWS:
         raise ValueError("window_days must be one of 21, 63, 126")

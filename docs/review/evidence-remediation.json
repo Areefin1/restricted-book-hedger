@@ -1,0 +1,497 @@
+{
+  "metadata": {
+    "first_date": "2011-03-22",
+    "last_date": "2026-10-09",
+    "trading_days": 3912,
+    "data_version": "sha256:49468ede28065fd6492c0ef54488ae34cd0a49367e2a8da8fd8889bcaef503dc",
+    "sha256": "49468ede28065fd6492c0ef54488ae34cd0a49367e2a8da8fd8889bcaef503dc",
+    "provenance": "Bundled HYG/SJB analytical return series. Original provider response, adjustment verification and retrieval time were not recorded; cache identity alone does not verify historical accuracy.",
+    "retrieved_at": null,
+    "source": "unverified legacy repository cache",
+    "adjustment": "auto_adjust=False; analytical inputs use Adj Close for both funds. Raw closes are retained for inspection.",
+    "is_synthetic": null,
+    "verified": false,
+    "cash_provenance": "UNVERIFIED legacy rf_annual_pct; original source, quote basis and timing unavailable. Interpreted only as an assumed effective annual rate, prior observation, actual/365.",
+    "features": {
+      "recommendation": true
+    },
+    "notes": []
+  },
+  "request": {
+    "book_size": 1000000,
+    "hedge_ratio": 0.6,
+    "annual_borrow_rate": 0.02,
+    "start_date": "2022-01-03",
+    "end_date": "2022-12-30"
+  },
+  "simulation_status": 200,
+  "zero_hedge_status": 200,
+  "simulation_summary": [
+    {
+      "strategy": "unhedged",
+      "final_pnl": -109418.41833296872,
+      "return_pct": -10.941841833296873,
+      "max_drawdown_pct": 15.519093539977025
+    },
+    {
+      "strategy": "static_short_hedged",
+      "final_pnl": -43983.58639778581,
+      "return_pct": -4.398358639778577,
+      "max_drawdown_pct": 6.5259967662849245
+    },
+    {
+      "strategy": "sjb_hedged",
+      "final_pnl": -63994.95869411528,
+      "return_pct": -6.399495869411531,
+      "max_drawdown_pct": 7.027288824651656
+    }
+  ],
+  "ending_exposure": {
+    "date": "2022-12-30",
+    "static_short_ratio": 0.6,
+    "sjb_ratio": 0.7378052131900098
+  },
+  "events": [],
+  "sanity": {
+    "beta": -1.0045578609630303,
+    "intercept_daily": -0.00011541790321733898,
+    "r_squared": 0.9417213845015313,
+    "correlation": -0.9704233017098937,
+    "observations": 3911,
+    "notes": [
+      "OLS of SJB daily excess returns on HYG daily excess returns over the full cache; cash is subtracted from both series.",
+      "UNVERIFIED cash assumption: legacy rf_annual_pct is interpreted as an effective annual percentage, using the previous observation and actual/365. Original provider and quote basis are unknown.",
+      "HYG is a comparison proxy, not an identical benchmark. A beta near -1 indicates inverse co-movement, not proof of exact target delivery.",
+      "The intercept combines benchmark differences, tracking, expenses, and noise; it is not an exact expense estimate."
+    ],
+    "data_version": "sha256:49468ede28065fd6492c0ef54488ae34cd0a49367e2a8da8fd8889bcaef503dc"
+  },
+  "rolling_windows": 3849,
+  "rolling_notes": [
+    "Each window uses 63 return intervals and 64 prices. Research returns are compounded asset total return minus separately compounded cash return.",
+    "Research volatility is zero-mean root-sum-squared daily HYG excess returns, annualized by sqrt(252/N); sample volatility is separate.",
+    "Windows overlap and are not independent observations.",
+    "The y=-x line is the funded no-rebalance -1x excess-return benchmark before costs. HYG is a tradable proxy, not the exact index; tracking and expenses also affect the gap.",
+    "UNVERIFIED cash assumption: legacy rf_annual_pct is interpreted as an effective annual percentage, using the previous observation and actual/365. Original provider and quote basis are unknown."
+  ],
+  "scenarios": [
+    {
+      "id": "covid-2020",
+      "name": "2020 stress",
+      "start_date": "2020-02-03",
+      "end_date": "2020-06-30",
+      "rule": "February through June 2020: selloff and initial recovery; dates resolved inward to shared observations."
+    },
+    {
+      "id": "rates-2022",
+      "name": "2022 drawdown",
+      "start_date": "2022-01-03",
+      "end_date": "2022-12-30",
+      "rule": "Calendar 2022; dates resolved inward to shared observations."
+    },
+    {
+      "id": "choppy",
+      "name": "Choppy period",
+      "start_date": "2011-06-13",
+      "end_date": "2011-12-09",
+      "rule": "Highest HYG realized volatility among 126-interval windows with absolute net HYG return <= 2%, excluding overlaps with stress presets. Earliest window wins ties; selected in-sample."
+    },
+    {
+      "id": "full",
+      "name": "Full history",
+      "start_date": "2011-03-22",
+      "end_date": "2026-10-09",
+      "rule": "All shared observations in the loaded cache."
+    }
+  ],
+  "search": {
+    "static_short": {
+      "window_days": 63,
+      "instrument": "static_short",
+      "objective": "Maximize the worst ending portfolio return across overlapping rolling windows.",
+      "recommended_ratio": 1.0,
+      "objective_value_pct": -0.4266731177157368,
+      "grid": [
+        {
+          "hedge_ratio": 0.0,
+          "worst_window_return_pct": -10.035868824847539,
+          "median_window_return_pct": -3.5969350040486017,
+          "best_window_return_pct": 6.2820992666067
+        },
+        {
+          "hedge_ratio": 0.05,
+          "worst_window_return_pct": -9.546770223728762,
+          "median_window_return_pct": -3.4333587006800945,
+          "best_window_return_pct": 5.9903211715437665
+        },
+        {
+          "hedge_ratio": 0.1,
+          "worst_window_return_pct": -9.05767162261002,
+          "median_window_return_pct": -3.263255315833974,
+          "best_window_return_pct": 5.698543076480811
+        },
+        {
+          "hedge_ratio": 0.15,
+          "worst_window_return_pct": -8.568573021491243,
+          "median_window_return_pct": -3.0777290415815783,
+          "best_window_return_pct": 5.4067649814178775
+        },
+        {
+          "hedge_ratio": 0.2,
+          "worst_window_return_pct": -8.07947442037249,
+          "median_window_return_pct": -2.8845301740025753,
+          "best_window_return_pct": 5.114986886354944
+        },
+        {
+          "hedge_ratio": 0.25,
+          "worst_window_return_pct": -7.590375819253725,
+          "median_window_return_pct": -2.7039880331391597,
+          "best_window_return_pct": 4.8232087912919885
+        },
+        {
+          "hedge_ratio": 0.3,
+          "worst_window_return_pct": -7.10127721813496,
+          "median_window_return_pct": -2.536247428544902,
+          "best_window_return_pct": 4.531430696229055
+        },
+        {
+          "hedge_ratio": 0.35,
+          "worst_window_return_pct": -6.612178617016207,
+          "median_window_return_pct": -2.3714703180471144,
+          "best_window_return_pct": 4.239652601166122
+        },
+        {
+          "hedge_ratio": 0.4,
+          "worst_window_return_pct": -6.123080015897441,
+          "median_window_return_pct": -2.192275635401819,
+          "best_window_return_pct": 3.947874506103166
+        },
+        {
+          "hedge_ratio": 0.45,
+          "worst_window_return_pct": -5.6339814147786775,
+          "median_window_return_pct": -2.0130809527565185,
+          "best_window_return_pct": 3.6560964110402328
+        },
+        {
+          "hedge_ratio": 0.5,
+          "worst_window_return_pct": -5.144882813659923,
+          "median_window_return_pct": -1.8233729624341777,
+          "best_window_return_pct": 3.364318315977277
+        },
+        {
+          "hedge_ratio": 0.55,
+          "worst_window_return_pct": -4.655784212541148,
+          "median_window_return_pct": -1.632697539641531,
+          "best_window_return_pct": 3.0725402209143438
+        },
+        {
+          "hedge_ratio": 0.6,
+          "worst_window_return_pct": -4.166685611422382,
+          "median_window_return_pct": -1.4548661540739471,
+          "best_window_return_pct": 2.7807621258514104
+        },
+        {
+          "hedge_ratio": 0.65,
+          "worst_window_return_pct": -3.677587010303629,
+          "median_window_return_pct": -1.2713781055271711,
+          "best_window_return_pct": 2.4889840307884548
+        },
+        {
+          "hedge_ratio": 0.7,
+          "worst_window_return_pct": -3.188488409184864,
+          "median_window_return_pct": -1.098868095495542,
+          "best_window_return_pct": 2.1972059357255214
+        },
+        {
+          "hedge_ratio": 0.75,
+          "worst_window_return_pct": -2.6993898080661105,
+          "median_window_return_pct": -0.8911549984323974,
+          "best_window_return_pct": 1.905427840662588
+        },
+        {
+          "hedge_ratio": 0.8,
+          "worst_window_return_pct": -2.2102912069473346,
+          "median_window_return_pct": -0.7049284508070686,
+          "best_window_return_pct": 1.6136497455996324
+        },
+        {
+          "hedge_ratio": 0.85,
+          "worst_window_return_pct": -1.721192605828581,
+          "median_window_return_pct": -0.4657288606244758,
+          "best_window_return_pct": 1.321871650536699
+        },
+        {
+          "hedge_ratio": 0.9,
+          "worst_window_return_pct": -1.2320940047098161,
+          "median_window_return_pct": -0.24199498637995642,
+          "best_window_return_pct": 1.0300935554737656
+        },
+        {
+          "hedge_ratio": 0.95,
+          "worst_window_return_pct": -0.7429954035910624,
+          "median_window_return_pct": -0.06150922255779845,
+          "best_window_return_pct": 0.73831546041081
+        },
+        {
+          "hedge_ratio": 1.0,
+          "worst_window_return_pct": -0.4266731177157368,
+          "median_window_return_pct": -0.058438909365110536,
+          "best_window_return_pct": 0.4752662248381556
+        }
+      ],
+      "windows_evaluated": 188,
+      "in_sample": true,
+      "effective_start_date": "2022-01-03",
+      "effective_end_date": "2022-12-30",
+      "assumptions": [
+        {
+          "label": "Proxy",
+          "detail": "The restricted book follows adjusted HYG returns, not individual bond exposures."
+        },
+        {
+          "label": "Capital accounting",
+          "detail": "Equal initial equity. SJB borrowing compounds at cash plus the funding spread; short collateral compounds at cash minus the rebate spread. Spreads are continuous annual decimal spreads, and borrow fees are separate."
+        },
+        {
+          "label": "Cash input",
+          "detail": "UNVERIFIED cash assumption: legacy rf_annual_pct is interpreted as an effective annual percentage, using the previous observation and actual/365. Original provider and quote basis are unknown."
+        },
+        {
+          "label": "Static short",
+          "detail": "Negative adjusted HYG return on initial hedge exposure, less 2.00% annual borrow cost using actual elapsed calendar days / 365. This is a return-series approximation, not an executable short ledger."
+        },
+        {
+          "label": "SJB hedge",
+          "detail": "Buy and hold the initial SJB investment. Observed adjusted returns include distributions and fund expenses; no additional expense deduction is applied."
+        },
+        {
+          "label": "User assumptions",
+          "detail": "Funding spread 0.00%; rebate spread 0.00%; round-trip hedge cost 0 bp on initial notional, charged once after inception. Zero costs are assumptions, not observed execution."
+        },
+        {
+          "label": "Proxy stress",
+          "detail": "Book beta 1; annual additive basis return 0.00%. These are sensitivities, not holdings-based DV01/CS01 or default models."
+        },
+        {
+          "label": "Capacity",
+          "detail": "User-supplied maximum initial hedge notional: None. Without a supplied limit, market capacity is unverified; no ADV or market-impact estimate is implied."
+        },
+        {
+          "label": "Termination",
+          "detail": "Research paths freeze at first equity-floor breach (0% of initial equity), retaining overshoot. This is a stress cutoff, not broker margin or executable liquidation of a restricted book. Recalls and intraday margin remain unmodeled."
+        },
+        {
+          "label": "Exposure drift",
+          "detail": "Initial investments are held as return-series exposures. SJB resets internally but the investor does not rebalance; time-varying hedge/book ratios are reported. Adjusted returns assume distribution reinvestment, not fixed shares."
+        },
+        {
+          "label": "Excluded costs",
+          "detail": "No observed quotes, market impact, short recalls, broker-specific margin schedules, or taxes. This is a research sensitivity, not an executable trade ledger."
+        },
+        {
+          "label": "Historical selection",
+          "detail": "Selected and evaluated on the same overlapping history; no holdout. Each window starts with a fresh hedge. Capacity limits exclude infeasible grid ratios."
+        },
+        {
+          "label": "Grid and tradeoffs",
+          "detail": "Ratios 0 to 1 in steps of 0.05; ties favor the smaller ratio. Worst ending return is not within-window drawdown."
+        }
+      ],
+      "data_version": "sha256:49468ede28065fd6492c0ef54488ae34cd0a49367e2a8da8fd8889bcaef503dc"
+    },
+    "sjb": {
+      "window_days": 63,
+      "instrument": "sjb",
+      "objective": "Maximize the worst ending portfolio return across overlapping rolling windows.",
+      "recommended_ratio": 0.95,
+      "objective_value_pct": -1.6462625348905413,
+      "grid": [
+        {
+          "hedge_ratio": 0.0,
+          "worst_window_return_pct": -10.035868824847539,
+          "median_window_return_pct": -3.5969350040486017,
+          "best_window_return_pct": 6.2820992666067
+        },
+        {
+          "hedge_ratio": 0.05,
+          "worst_window_return_pct": -9.564779042943838,
+          "median_window_return_pct": -3.4796378168275965,
+          "best_window_return_pct": 5.9528785607974255
+        },
+        {
+          "hedge_ratio": 0.1,
+          "worst_window_return_pct": -9.093689261040128,
+          "median_window_return_pct": -3.3623406296066083,
+          "best_window_return_pct": 5.623657854988129
+        },
+        {
+          "hedge_ratio": 0.15,
+          "worst_window_return_pct": -8.622599479136428,
+          "median_window_return_pct": -3.2436361411298797,
+          "best_window_return_pct": 5.294437149178832
+        },
+        {
+          "hedge_ratio": 0.2,
+          "worst_window_return_pct": -8.151509697232717,
+          "median_window_return_pct": -3.117985287778202,
+          "best_window_return_pct": 4.965216443369558
+        },
+        {
+          "hedge_ratio": 0.25,
+          "worst_window_return_pct": -7.680419915329006,
+          "median_window_return_pct": -2.99233443442653,
+          "best_window_return_pct": 4.635995737560261
+        },
+        {
+          "hedge_ratio": 0.3,
+          "worst_window_return_pct": -7.209330133425307,
+          "median_window_return_pct": -2.8658055759914705,
+          "best_window_return_pct": 4.306775031750987
+        },
+        {
+          "hedge_ratio": 0.35,
+          "worst_window_return_pct": -6.738240351521596,
+          "median_window_return_pct": -2.7410327277231805,
+          "best_window_return_pct": 3.9775543259417123
+        },
+        {
+          "hedge_ratio": 0.4,
+          "worst_window_return_pct": -6.267150569617897,
+          "median_window_return_pct": -2.615381874371503,
+          "best_window_return_pct": 3.6483336201323935
+        },
+        {
+          "hedge_ratio": 0.45,
+          "worst_window_return_pct": -5.796060787714186,
+          "median_window_return_pct": -2.4912969836411056,
+          "best_window_return_pct": 3.319112914323119
+        },
+        {
+          "hedge_ratio": 0.5,
+          "worst_window_return_pct": -5.324971005810486,
+          "median_window_return_pct": -2.373129756796594,
+          "best_window_return_pct": 2.9898922085138224
+        },
+        {
+          "hedge_ratio": 0.55,
+          "worst_window_return_pct": -4.853881223906786,
+          "median_window_return_pct": -2.2559001901231666,
+          "best_window_return_pct": 2.660671502704548
+        },
+        {
+          "hedge_ratio": 0.6,
+          "worst_window_return_pct": -4.382791442003075,
+          "median_window_return_pct": -2.123347019622951,
+          "best_window_return_pct": 2.3314507968952736
+        },
+        {
+          "hedge_ratio": 0.65,
+          "worst_window_return_pct": -3.911701660099376,
+          "median_window_return_pct": -1.968191303475153,
+          "best_window_return_pct": 2.0022300910859547
+        },
+        {
+          "hedge_ratio": 0.7,
+          "worst_window_return_pct": -3.440611878195665,
+          "median_window_return_pct": -1.8409533205146655,
+          "best_window_return_pct": 1.6730093852766803
+        },
+        {
+          "hedge_ratio": 0.75,
+          "worst_window_return_pct": -2.9695220962919655,
+          "median_window_return_pct": -1.7004400266037334,
+          "best_window_return_pct": 1.3437886794674059
+        },
+        {
+          "hedge_ratio": 0.8,
+          "worst_window_return_pct": -2.5233776786685924,
+          "median_window_return_pct": -1.615530147616534,
+          "best_window_return_pct": 1.0145679736581092
+        },
+        {
+          "hedge_ratio": 0.85,
+          "worst_window_return_pct": -2.123234827248688,
+          "median_window_return_pct": -1.4576069135123493,
+          "best_window_return_pct": 0.6853472678488348
+        },
+        {
+          "hedge_ratio": 0.9,
+          "worst_window_return_pct": -1.8320778899315937,
+          "median_window_return_pct": -1.305433241289744,
+          "best_window_return_pct": 0.3561265620395382
+        },
+        {
+          "hedge_ratio": 0.95,
+          "worst_window_return_pct": -1.6462625348905413,
+          "median_window_return_pct": -1.13874702718742,
+          "best_window_return_pct": 0.026905856230241554
+        },
+        {
+          "hedge_ratio": 1.0,
+          "worst_window_return_pct": -1.7229276378291303,
+          "median_window_return_pct": -1.0201512838292848,
+          "best_window_return_pct": -0.3023148495790329
+        }
+      ],
+      "windows_evaluated": 188,
+      "in_sample": true,
+      "effective_start_date": "2022-01-03",
+      "effective_end_date": "2022-12-30",
+      "assumptions": [
+        {
+          "label": "Proxy",
+          "detail": "The restricted book follows adjusted HYG returns, not individual bond exposures."
+        },
+        {
+          "label": "Capital accounting",
+          "detail": "Equal initial equity. SJB borrowing compounds at cash plus the funding spread; short collateral compounds at cash minus the rebate spread. Spreads are continuous annual decimal spreads, and borrow fees are separate."
+        },
+        {
+          "label": "Cash input",
+          "detail": "UNVERIFIED cash assumption: legacy rf_annual_pct is interpreted as an effective annual percentage, using the previous observation and actual/365. Original provider and quote basis are unknown."
+        },
+        {
+          "label": "Static short",
+          "detail": "Negative adjusted HYG return on initial hedge exposure, less 2.00% annual borrow cost using actual elapsed calendar days / 365. This is a return-series approximation, not an executable short ledger."
+        },
+        {
+          "label": "SJB hedge",
+          "detail": "Buy and hold the initial SJB investment. Observed adjusted returns include distributions and fund expenses; no additional expense deduction is applied."
+        },
+        {
+          "label": "User assumptions",
+          "detail": "Funding spread 0.00%; rebate spread 0.00%; round-trip hedge cost 0 bp on initial notional, charged once after inception. Zero costs are assumptions, not observed execution."
+        },
+        {
+          "label": "Proxy stress",
+          "detail": "Book beta 1; annual additive basis return 0.00%. These are sensitivities, not holdings-based DV01/CS01 or default models."
+        },
+        {
+          "label": "Capacity",
+          "detail": "User-supplied maximum initial hedge notional: None. Without a supplied limit, market capacity is unverified; no ADV or market-impact estimate is implied."
+        },
+        {
+          "label": "Termination",
+          "detail": "Research paths freeze at first equity-floor breach (0% of initial equity), retaining overshoot. This is a stress cutoff, not broker margin or executable liquidation of a restricted book. Recalls and intraday margin remain unmodeled."
+        },
+        {
+          "label": "Exposure drift",
+          "detail": "Initial investments are held as return-series exposures. SJB resets internally but the investor does not rebalance; time-varying hedge/book ratios are reported. Adjusted returns assume distribution reinvestment, not fixed shares."
+        },
+        {
+          "label": "Excluded costs",
+          "detail": "No observed quotes, market impact, short recalls, broker-specific margin schedules, or taxes. This is a research sensitivity, not an executable trade ledger."
+        },
+        {
+          "label": "Historical selection",
+          "detail": "Selected and evaluated on the same overlapping history; no holdout. Each window starts with a fresh hedge. Capacity limits exclude infeasible grid ratios."
+        },
+        {
+          "label": "Grid and tradeoffs",
+          "detail": "Ratios 0 to 1 in steps of 0.05; ties favor the smaller ratio. Worst ending return is not within-window drawdown."
+        }
+      ],
+      "data_version": "sha256:49468ede28065fd6492c0ef54488ae34cd0a49367e2a8da8fd8889bcaef503dc"
+    }
+  }
+}

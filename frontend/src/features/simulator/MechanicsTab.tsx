@@ -94,8 +94,8 @@ function WindowDecomposition({ req, res }: { req: SimulationRequest; res: Simula
   if (!points) {
     return (
       <Panel title="Selected window: instrument returns">
-        <EmptyState title="Hedge ratio is 0">
-          SJB returns are recovered from the hedge P/L, so set a hedge ratio above 0 to see this comparison.
+        <EmptyState title="Instrument returns unavailable">
+          Reload results from the updated API to see this comparison.
         </EmptyState>
       </Panel>
     )
@@ -107,7 +107,7 @@ function WindowDecomposition({ req, res }: { req: SimulationRequest; res: Simula
   return (
     <Panel
       title="Selected window: instrument returns"
-      subtitle="Cumulative return per $1 of hedge notional, recovered from the simulation paths."
+      subtitle="Adjusted instrument total returns, separate from funded portfolio P/L and proxy stresses."
     >
       <div className="stat-strip">
         <div>
@@ -168,7 +168,7 @@ export function MechanicsTab({ req, res }: { req: SimulationRequest; res: Simula
           <ul>
             <li>Model a fixed initial short exposure using negative adjusted HYG returns.</li>
             <li>P/L is exactly −1 × HYG's cumulative move on the hedged notional, before costs.</li>
-            <li>Not path dependent: only the start and end prices matter.</li>
+            <li>Negative adjusted-return exposure is an analytical comparison; it is not a fixed-share short ledger.</li>
             <li>Costs: borrow fee on the short (an explicit input here). Requires the ability to borrow shares.</li>
           </ul>
         </article>
@@ -182,7 +182,7 @@ export function MechanicsTab({ req, res }: { req: SimulationRequest; res: Simula
             <li>Buy an inverse ETF that targets −1x of the index's return each day.</li>
             <li>Rebalances daily, so multi-day returns compound and depend on the path.</li>
             <li>Compounding can help in trends or hurt in reversals; observed fund returns also reflect tracking and benchmark differences.</li>
-            <li>Costs: fund expenses are inside its price. No borrow needed; financing assumed free here.</li>
+            <li>Costs: fund expenses are inside its price. The overlay pays cash funding plus the assumed funding spread and trading cost.</li>
           </ul>
         </article>
       </div>

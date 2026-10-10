@@ -1,0 +1,42 @@
+# P0/P1 remediation status
+
+Updated October 10, 2026. This table supersedes the **open status** of the P0/P1 entries in the [original review](integrity-review.md) and [expanded review](integrity-review-2026-10-10.md); those reports remain historical evidence. The project remains a paper-inspired HYG/SJB research application. No actual holdings, broker terms or independently verified replacement market/cash series have been supplied. The requested cash-data download was denied, so no network data was imported.
+
+Both P0 blockers are repaired. Every P1 item has a code, accounting, disclosure or research control change below. **Mitigated / data open** means that the research implementation is improved but the original real-world acceptance requirement is not satisfied. These items must not be called resolved for institutional use.
+
+| ID | Priority | Status | Change delivered | Remaining team action / evidence |
+| --- | --- | --- | --- | --- |
+| F01 | P0 | Fixed | Loader retains and validates cash inputs; missing cash requires explicit assumption rather than zero. | Real-cache 2022 and zero-hedge HTTP requests return 200. Price-only cache remains healthy and supports explicit cash overrides. |
+| F02 | P0 | Fixed | All three cumulative P/L fields restored, each strategy value minus initial equity. | Complete API response and inception P/L identities covered. |
+| F03 | P1 | Fixed | Shared cash/accounting helpers drive simulation and every search window; mock, controls and docs use the same financed model. | Every grid/window comparison checked; nonzero funding/spreads, capacity and cutoff parity tested across Python and TypeScript. |
+| F04 | P1 | Math fixed; data open | Daily regressions use excess returns. Window research subtracts separately compounded cash; total returns remain separate fields. Funded excess benchmark labeled correctly. | Replace unverified cash assumptions with a sourced, aligned series before treating results as historical evidence. |
+| F05 | P1 | Fixed | Research colors/terciles use annualized zero-mean daily excess variation; demeaned sample volatility is separately named. | Trend retains variation; normalization/window alignment independently tested. Research remains conditional on cash inputs. |
+| F06 | P1 | Identity fixed; source open | Matching sidecar records current exact hash, unknown original retrieval, unknown synthetic status and `verified=false`. Bundled hash pair checked in normal tests. | Recover original source/settings or independently reconcile prices, distributions and adjustments. Matching bytes do not establish accuracy. Historical provider response remains unavailable. |
+| F07 | P1 | Importer fixed; history open | Cash contract supports decimal ending-interval returns; refresher requires a supplied cash file and provenance. Archives parsed provider output and exact supplied cash bytes by hash. Prior-quote actual/365 legacy convention labeled unverified. | Supply verified cash returns, source quote basis, availability timing and calendar alignment. No inferred provider or fabricated retrieval timestamp. |
+| F08 | P1 | Accounting fixed; broker terms open | Equal initial equity with cash rebate for short proceeds and cash financing for SJB; separate user funding/rebate spreads and borrow fee. | Obtain actual account funding, collateral interest and gross borrow terms; avoid double counting a net rebate/borrow quote. Zero spreads are assumptions. |
+| F09 | P1 | Addressed for research scope | Negative adjusted-return overlay consistently identified as a reinvested analytical series, not executable fixed shares. Mechanics receives instrument returns separately from funded P/L. | An executable extension needs raw/split-adjusted shares, distributions, ex/pay dates and cash dividend liabilities. Expenses/distributions are not deducted again from adjusted returns. |
+| F10 | P1 | Mitigated; holdings open | HYG proxy label retained; assumed linear book beta and additive basis stresses added to simulation and search. | Obtain a broker/custodian holdings export or portfolio-system report for actual DV01/CS01, optionality, concentration, defaults/recovery and FX. Stress coefficients are not measured portfolio exposures. |
+| F11 | P1 | Mitigated; market execution open | Assumed round-trip initial-notional cost and optional dollar capacity limit exposed. Over-capacity simulations rejected; search excludes infeasible ratios. | Supply quotes/NAV/index timing, volume/participation limits, capacity and impact estimates. Blank capacity means unverified. No outlier was deleted or declared bad merely because it is extreme. |
+| F12 | P1 | Mitigated; broker survival open | Per-strategy equity-floor cutoff prevents modeled recovery after insolvency; closing overshoot retained and events shown. Funding/borrow and proxy stresses are configurable. | Actual margin, marked borrow schedules, fee spikes, unavailable borrow/recalls, intraday collateral and executable forced closeout remain unmodeled. A floor is a research termination rule, not broker margin or permission to liquidate a restricted book. |
+| F13 | P1 | Addressed for fixed-investment scope | Daily short/book and SJB/book exposure diagnostics returned and charted; unavailable after cutoff/nonpositive book. Investor holdings remain unrebalanced. | If a maintained hedge ratio is required, specify and implement rebalancing/funding/turnover separately. Ratios are not measured residual beta. |
+| F27 | P1 | Fixed | Standalone funded inverse comparison shares cash helper and zero-mean excess variation. Baseline/end dates corrected; continuous curve can take actual modeled cash growth. Prototype included in default root test discovery. | Funded standalone `2G-H-1` is explicitly distinct from investor overlay P/L. No paper replication claim. |
+
+Related fixes while connecting these changes: stale recommendation apply is disabled; response window length identifies displayed results (F22). Unknown provenance no longer implies nonsynthetic market data (F23). Conflicting normalized/adjusted price aliases are rejected (F29). Standalone window start dates use the actual initial price (F28). Other P2 findings remain outside this remediation.
+
+## Acceptance evidence
+
+Run `python -m pytest` from the root, `npm --prefix frontend run lint`, and `npm --prefix frontend run test:e2e`. Root pytest includes standalone prototype tests. Browser tests cover desktop/mobile workflows, advanced input submission, zero-cash synthetic research identities, and API/mock parity with nonzero financing and stress cutoffs. The suite also checks unavailable cash, weekends/prior quotes, negative rates, compound-vs-daily excess, capacity and preserved insolvency overshoot.
+
+Validation: **171 backend tests passed**; **10 desktop/mobile acceptance tests passed**; frontend lint and production build passed. A subsequent small UI change lets search proceed when the current simulation ratio exceeds capacity; lint and TypeScript passed, but its final browser rerun was declined and that new assertion has not executed. The unchanged Plotly bundle-size advisory remains a performance issue, not a failed build. Network refresh was not exercised against a live provider; cash import validation is tested offline.
+
+Current real-cache acceptance evidence is [review/evidence-remediation.json](review/evidence-remediation.json), regenerated by `python docs/review/remediation-probes.py`. Historical `probes.py` and `current-probes.py` intentionally assert pre-fix defects; they are not post-fix acceptance tests.
+
+The unchanged cache, $1m book, 60% hedge and 2% borrow in 2022 now gives the following **conditional sensitivity using unverified legacy cash quotes**, zero spreads and zero trading cost:
+
+| Strategy | Ending P/L | Return | Max drawdown |
+| --- | --- | --- | --- |
+| Unhedged | -$109,418.42 | -10.9418% | 15.5191% |
+| Static negative-return overlay | -$43,983.59 | -4.3984% | 6.5260% |
+| SJB funded overlay | -$63,994.96 | -6.3995% | 7.0273% |
+
+2022 63-interval search selects 1.00 for static short (worst ending return -0.4267%) and 0.95 for SJB (-1.6463%). These replace the old zero-funding demo references and illustrate why financing matters. They are in-sample grid outcomes, not execution estimates or recommendations. Ending SJB/book notional ratio is 0.737805 versus initial 0.6. Full-cache OLS uses 3,911 excess-return observations; 63-interval research has 3,849 overlapping windows.

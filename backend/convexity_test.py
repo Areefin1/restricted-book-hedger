@@ -48,10 +48,6 @@ def test_single_window_has_no_bucket():
     df = rolling_windows(make_prices([0.10, -0.10], [-0.10, 0.10]), window=2)
     assert pd.isna(df.iloc[0]["vol_bucket"])
 
-def test_single_window_has_no_bucket():
-      df = rolling_windows(make_prices([0.10, -0.10], [-0.10, 0.10]), window=2)
-      assert pd.isna(df.iloc[0]["vol_bucket"])
-
 def test_decomposition_adds_up():
     rets = [0.02, -0.03, 0.01, 0.04, -0.02]
     df = rolling_windows(make_prices(rets, [-x for x in rets], rf_pct=5.0), window=3)

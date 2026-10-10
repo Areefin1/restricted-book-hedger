@@ -19,7 +19,7 @@ def client(tmp_path):
     path = tmp_path / "prices.csv"
     pd.DataFrame({"date": pd.bdate_range("2022-01-03", periods=140),
                   "hyg": 100 * np.cumprod(1 + np.resize([.01, -.02, .005], 140)),
-                  "sjb": 50 * np.cumprod(1 + np.resize([-.01, .02, -.005], 140))}).to_csv(path, index=False)
+                  "rf_return": 0.0, "sjb": 50 * np.cumprod(1 + np.resize([-.01, .02, -.005], 140))}).to_csv(path, index=False)
     with TestClient(create_app(Settings(_env_file=None, prices_path=path, metadata_path=tmp_path / "missing.json"))) as connection:
         yield connection
 

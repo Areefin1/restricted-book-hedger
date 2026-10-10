@@ -5,6 +5,7 @@
 import type { Assumption, PathPoint, SimulationRequest, SimulationResponse, SummaryRow } from '../api/types'
 import type { PriceRow } from '../mock/syntheticPrices'
 import { calendarDays, maxDrawdown } from './metrics'
+import { cashFactors, modelValues } from './accounting'
 
 export class HedgerError extends Error {
   readonly code: string
@@ -55,11 +56,11 @@ export function simulationAssumptions(req: SimulationRequest): Assumption[] {
     {
       label: 'Capital accounting',
       detail:
-        'Each series is original book value plus hedge P/L. The SJB purchase is offset by a financing account at zero interest.',
+        'Matched cash accounts: short proceeds earn cash less rebate haircut; SJB purchase pays cash plus funding spread. Synthetic cash defaults explicitly to zero; a constant cash override is supported.',
     },
     {
       label: 'Static short',
-      detail: `Short HYG worth hedge ratio × book size at the start, share count held fixed. Borrow cost ${(
+      detail: `Negative adjusted HYG return-series overlay sized at hedge ratio × initial book size; not an executable fixed-share ledger. Borrow cost ${(
         req.annual_borrow_rate * 100
       ).toFixed(2)}%/yr accrues on the initial short notional using actual elapsed calendar days / 365.`,
     },
@@ -71,8 +72,9 @@ export function simulationAssumptions(req: SimulationRequest): Assumption[] {
     {
       label: 'Fees',
       detail:
-        'ETF expenses are already embedded in the price series and are not deducted again. Spreads and trading costs are not modeled.',
+        `ETF expenses are embedded and not deducted again. Assumed round-trip cost ${req.round_trip_cost_bps ?? 0} bps on initial notional, charged once after inception. Funding and rebate spreads are user assumptions.`,
     },
+    { label: 'Research stress', detail: `Book beta ${req.book_beta ?? 1}, annual basis return ${req.annual_basis_return ?? 0}, equity floor ${req.termination_floor ?? 0}. Freeze at first closing breach, retaining overshoot. Not broker margin or executable liquidation; recalls and actual liquidity remain unmodeled. Capacity is user-supplied or unverified.` },
   ]
 }
 
@@ -89,16 +91,26 @@ export function simulateHedges(
 
   const B = req.book_size
   const h = req.hedge_ratio
-  const dailyBorrow = (h * B * req.annual_borrow_rate) / 365
+  if (req.max_hedge_notional != null && B * h > req.max_hedge_notional) throw new HedgerError('CAPACITY', 'Initial hedge exceeds assumed capacity.')
+  const cash = cashFactors(rows, req)
+  const keys = ['unhedged', 'static_short_hedged', 'sjb_hedged'] as const
+  const events: SimulationResponse['events'] = []
+  const stopped: (number | null)[] = [null, null, null]
   const hyg0 = rows[0].hyg
   const sjb0 = rows[0].sjb
 
-  const paths: PathPoint[] = rows.map((r) => {
+  const paths: PathPoint[] = rows.map((r, i) => {
     const g = r.hyg / hyg0
     const s = r.sjb / sjb0
-    const book = B * g
-    const staticValue = book - h * B * (g - 1) - dailyBorrow * calendarDays(rows[0].date, r.date)
-    const sjbValue = book + h * B * (s - 1)
+    const values = modelValues(g, s, cash[i], calendarDays(rows[0].date, r.date), B, h, req.annual_borrow_rate, req)
+    for (let k = 0; k < 3; k++) {
+      if (stopped[k] !== null) values[k] = stopped[k]!
+      else if (values[k] <= B * (req.termination_floor ?? 0)) {
+        stopped[k] = values[k]
+        events.push({ date: r.date, strategy: keys[k], reason: 'Research equity-floor cutoff; closing overshoot retained, not executable liquidation.' })
+      }
+    }
+    const [book, staticValue, sjbValue] = values
     return {
       date: r.date,
       unhedged: book,
@@ -111,7 +123,6 @@ export function simulateHedges(
   })
 
   const dates = paths.map((p) => p.date)
-  const keys = ['unhedged', 'static_short_hedged', 'sjb_hedged'] as const
   const summary: SummaryRow[] = keys.map((k) => {
     const values = paths.map((p) => p[k])
     const final = values[values.length - 1]
@@ -124,6 +135,14 @@ export function simulateHedges(
   })
 
   return {
+    events,
+    instrument_returns: rows.map((r) => ({ date: r.date, hyg_return: r.hyg / hyg0 - 1, sjb_return: r.sjb / sjb0 - 1 })),
+    exposures: rows.map((r) => {
+      const days = calendarDays(rows[0].date, r.date)
+      const book = 1 + (req.book_beta ?? 1) * (r.hyg / hyg0 - 1) + (req.annual_basis_return ?? 0) * days / 365
+      const active = (k: typeof keys[number]) => book > 0 && !events.some((e) => e.strategy === k && e.date <= r.date)
+      return { date: r.date, static_short_ratio: active('static_short_hedged') ? h * r.hyg / hyg0 / book : null, sjb_ratio: active('sjb_hedged') ? h * r.sjb / sjb0 / book : null }
+    }),
     paths,
     summary,
     effective_start_date: rows[0].date,

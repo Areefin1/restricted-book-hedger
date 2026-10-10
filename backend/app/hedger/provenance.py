@@ -26,4 +26,5 @@ def cache_metadata(prices_path: Path, metadata_path: Path, prices: pd.DataFrame)
                 provenance=source.get("provenance", "Local adjusted-price cache; original source and retrieval time are unavailable."),
                 retrieved_at=source.get("retrieved_at"), source=source.get("source", "unknown"),
                 adjustment=source.get("adjustment", "Adjusted hyg/sjb analytical return series; see methodology."),
-                is_synthetic=bool(source.get("is_synthetic", False)), features={"recommendation": True}, notes=notes)
+                is_synthetic=source.get("is_synthetic"), cash_provenance=source.get("cash_provenance", "Unverified cash inputs; original source, quote basis, and timing are unknown."),
+                verified=bool(source.get("verified", False)), features={"recommendation": True}, notes=notes)

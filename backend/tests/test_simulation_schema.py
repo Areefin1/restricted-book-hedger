@@ -27,7 +27,7 @@ def test_request_parses_dates_and_round_trips_json(request_payload):
     assert request.start_date == date(2022, 1, 3)
     assert request.hedge_ratio == 0.5
     assert request.annual_borrow_rate == 0.02
-    assert json.loads(request.model_dump_json()) == request_payload
+    assert json.loads(request.model_dump_json(exclude_unset=True)) == request_payload
 
 
 @pytest.mark.parametrize(
@@ -83,14 +83,14 @@ def response_payload():
 
 def test_response_matches_frontend_json_and_preserves_units(response_payload):
     response = SimulationResponse.model_validate(response_payload)
-    assert json.loads(response.model_dump_json()) == response_payload
+    assert json.loads(response.model_dump_json(exclude_unset=True)) == response_payload
     assert response.summary[0].return_pct == -10
     assert response.summary[0].max_drawdown_pct == 10
 
 
 def test_accepts_path_records_from_simulator(response_payload):
     prices = pd.DataFrame(
-        {"hyg": [100.0, 90.0], "sjb": [50.0, 54.0]},
+        {"hyg": [100.0, 90.0], "rf_return": 0.0, "sjb": [50.0, 54.0]},
         index=pd.DatetimeIndex(["2022-01-03", "2022-01-04"], name="date"),
     )
     response_payload["paths"] = simulate_hedges(prices, 100000, 0.5).reset_index().to_dict("records")

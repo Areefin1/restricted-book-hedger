@@ -54,7 +54,7 @@ def test_summary_uses_dollars_and_percentage_points_without_modifying_paths(path
 
 def test_simulation_summary_includes_borrow_cost_only_once():
     prices = pd.DataFrame(
-        {"hyg": [100.0, 100.0], "sjb": [50.0, 50.0]},
+        {"hyg": [100.0, 100.0], "rf_return": 0.0, "sjb": [50.0, 50.0]},
         index=pd.DatetimeIndex(["2022-01-01", "2023-01-01"], name="date"),
     )
     paths = simulate_hedges(prices, 100_000, 0.5, annual_borrow_rate=0.02)

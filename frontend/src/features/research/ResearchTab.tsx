@@ -71,8 +71,8 @@ function VolatilityContext({ data }: { data: ConvexityResponse }) {
               <th scope="col">Volatility tercile</th>
               <th scope="col" className="r">HYG vol range</th>
               <th scope="col" className="r">Windows</th>
-              <th scope="col" className="r">Avg HYG return</th>
-              <th scope="col" className="r">Avg SJB return</th>
+              <th scope="col" className="r">Avg HYG excess return</th>
+              <th scope="col" className="r">Avg SJB excess return</th>
               <th scope="col" className="r">
                 Avg SJB − static <InfoTip text={GLOSSARY.gap} label="About the gap" />
               </th>
@@ -118,7 +118,7 @@ export function ResearchTab() {
     <div className="stack">
       <Panel
         title="Daily sanity check"
-        subtitle="Does SJB deliver roughly −1x of HYG's daily return? Full history."
+        subtitle="Daily SJB excess returns against HYG excess returns, net of cached cash returns. Full history."
       >
         {sanity.error && !sanity.data ? (
           <ErrorState message={sanity.error} onRetry={sanity.retry} />
@@ -185,7 +185,7 @@ export function ResearchTab() {
             Empirical convexity <InfoTip text={GLOSSARY.rollingWindow} label="About rolling windows" />
           </>
         }
-        subtitle="Rolling-window SJB returns against HYG returns, colored by HYG realized volatility."
+        subtitle="Compounded asset return minus compounded cash return; color uses annualized zero-mean daily excess volatility."
         actions={
           <Segmented
             size="sm"
@@ -218,7 +218,7 @@ export function ResearchTab() {
                 <li key={n}>{n}</li>
               ))}
               <li>
-                Points above the dashed line are windows where SJB beat a static short of the same size; points below are
+                Points above the dashed line are windows where SJB beat the funded static inverse reference before costs; points below are
                 windows where it lagged.
               </li>
             </ul>

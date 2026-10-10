@@ -54,12 +54,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.state.metadata = cache_metadata(settings.prices_path, settings.metadata_path, prices)
         version = application.state.metadata["data_version"]
         application.state.scenarios = build_scenarios(prices)
-        application.state.sanity = {**run_sanity_check(prices), "data_version": version}
-        application.state.convexity = {
-            window: dict(window_days=window, points=calculate_rolling_windows(prices, window).to_dict("records"),
-                         notes=window_notes(window), data_version=version)
-            for window in PERMITTED_WINDOWS
-        }
+        application.state.research_error = None
+        try:
+            from app.hedger.funding import cash_note
+            application.state.sanity = {**run_sanity_check(prices), "data_version": version}
+            application.state.convexity = {
+                window: dict(window_days=window, points=calculate_rolling_windows(prices, window).to_dict("records"),
+                             notes=window_notes(window) + [cash_note(prices)], data_version=version)
+                for window in PERMITTED_WINDOWS
+            }
+        except ValueError as exc:
+            # A price-only cache still supports health, metadata, and simulations
+            # with an explicit cash assumption. Research must never assume zero.
+            application.state.research_error = str(exc)
         try:
             yield
         finally:

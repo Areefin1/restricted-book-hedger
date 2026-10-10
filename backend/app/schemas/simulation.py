@@ -14,7 +14,18 @@ class _SimulationModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
-class SimulationRequest(_SimulationModel):
+class ModelingOptions(_SimulationModel):
+    annual_cash_rate: FiniteNumber | None = Field(default=None, gt=-1, le=1)
+    funding_spread: FiniteNumber = Field(default=0, ge=0, le=1)
+    rebate_spread: FiniteNumber = Field(default=0, ge=0, le=1)
+    round_trip_cost_bps: FiniteNumber = Field(default=0, ge=0, le=10000)
+    book_beta: FiniteNumber = Field(default=1, ge=0, le=3)
+    annual_basis_return: FiniteNumber = Field(default=0, ge=-1, le=1)
+    termination_floor: FiniteNumber = Field(default=0, ge=0, le=.99)
+    max_hedge_notional: FiniteNumber | None = Field(default=None, gt=0)
+
+
+class SimulationRequest(ModelingOptions):
     """User choices; dates are calendar dates and rates are decimal fractions."""
 
     model_config = ConfigDict(
@@ -94,6 +105,24 @@ class Assumption(_SimulationModel):
     detail: str = Field(min_length=1)
 
 
+class ExposurePoint(_SimulationModel):
+    date: Date
+    static_short_ratio: FiniteNumber | None
+    sjb_ratio: FiniteNumber | None
+
+
+class TerminationEvent(_SimulationModel):
+    date: Date
+    strategy: StrategyId
+    reason: str
+
+
+class InstrumentReturn(_SimulationModel):
+    date: Date
+    hyg_return: FiniteNumber
+    sjb_return: FiniteNumber
+
+
 class SimulationResponse(_SimulationModel):
     """Complete results returned by POST /api/simulations."""
 
@@ -103,6 +132,9 @@ class SimulationResponse(_SimulationModel):
     effective_end_date: Date
     assumptions: list[Assumption] = Field(min_length=1)
     data_version: str = Field(min_length=1)
+    exposures: list[ExposurePoint] = Field(default_factory=list)
+    events: list[TerminationEvent] = Field(default_factory=list)
+    instrument_returns: list[InstrumentReturn] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_result_structure(self) -> Self:

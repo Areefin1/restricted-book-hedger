@@ -28,12 +28,14 @@ export function seriesOf(paths: PathPoint[], k: StrategyId): number[] {
 export function strategyRisk(res: SimulationResponse, req: SimulationRequest): StrategyRisk[] {
   const dates = res.paths.map((p) => p.date)
   const unhedged = seriesOf(res.paths, 'unhedged')
-  const elapsedDays = calendarDays(res.effective_start_date, res.effective_end_date)
   return STRATEGIES.map((k) => {
     const values = seriesOf(res.paths, k)
     const summary = res.summary.find((s) => s.strategy === k)
     const dd = maxDrawdown(values, dates)
     const rets = simpleReturns(values)
+    const validReturns = values.slice(0, -1).every((v) => v > 0) && rets.every(Number.isFinite)
+    const stopped = res.events.find((event) => event.strategy === k)
+    const elapsedDays = calendarDays(res.effective_start_date, stopped?.date ?? res.effective_end_date)
     const finalValue = values[values.length - 1]
     return {
       strategy: k,
@@ -43,8 +45,8 @@ export function strategyRisk(res: SimulationResponse, req: SimulationRequest): S
       maxDrawdownPct: summary?.max_drawdown_pct ?? dd.pct,
       peakDate: dd.peakDate,
       troughDate: dd.troughDate,
-      annualizedVolPct: annualizedVol(rets) * 100,
-      worstDayPct: rets.length ? Math.min(...rets) * 100 : 0,
+      annualizedVolPct: validReturns ? annualizedVol(rets) * 100 : NaN,
+      worstDayPct: validReturns && rets.length ? Math.min(...rets) * 100 : NaN,
       hedgePnl: finalValue - unhedged[unhedged.length - 1],
       borrowCost:
         k === 'static_short_hedged'
@@ -78,16 +80,12 @@ export interface MechanicsPoint {
  * hedge P/L.
  */
 export function hedgeMechanics(res: SimulationResponse, req: SimulationRequest): MechanicsPoint[] | null {
-  if (req.hedge_ratio <= 0) return null
-  const B = req.book_size
-  const notional = req.hedge_ratio * B
-  return res.paths.map((p) => {
-    const hyg = p.unhedged / B - 1
-    return { date: p.date, hyg, staticRef: -hyg, sjb: (p.sjb_hedged - p.unhedged) / notional }
-  })
+  void req
+  if (!res.instrument_returns.length) return null
+  return res.instrument_returns.map((p) => ({ date: p.date, hyg: p.hyg_return, staticRef: -p.hyg_return, sjb: p.sjb_return }))
 }
 
 /** Realized annualized volatility (decimal) of HYG over the simulated window. */
 export function windowHygVol(res: SimulationResponse): number {
-  return annualizedVol(simpleReturns(seriesOf(res.paths, 'unhedged')))
+  return annualizedVol(simpleReturns(res.instrument_returns.map((p) => 1 + p.hyg_return)))
 }

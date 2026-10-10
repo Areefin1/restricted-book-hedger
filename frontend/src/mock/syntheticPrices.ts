@@ -10,6 +10,7 @@ export interface PriceRow {
   date: string
   hyg: number
   sjb: number
+  rf_return: number
 }
 
 export const SYNTHETIC_DATA_VERSION = 'synthetic-v1-seed-42'
@@ -93,7 +94,7 @@ function generate(): PriceRow[] {
   const rand = mulberry32(SEED)
   const normal = normalSource(rand)
   const days = tradingDays(START, END)
-  const rows: PriceRow[] = [{ date: days[0], hyg: HYG_START, sjb: SJB_START }]
+  const rows: PriceRow[] = [{ date: days[0], hyg: HYG_START, sjb: SJB_START, rf_return: 0 }]
 
   for (let i = 1; i < days.length; i++) {
     const { vol, drift } = regimeFor(days[i])
@@ -108,6 +109,7 @@ function generate(): PriceRow[] {
       date: days[i],
       hyg: prev.hyg * (1 + hygRet),
       sjb: prev.sjb * (1 + sjbRet),
+      rf_return: 0, // Explicit synthetic zero-cash scenario, not a market rate.
     })
   }
   return rows

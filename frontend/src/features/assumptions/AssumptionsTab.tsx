@@ -60,6 +60,8 @@ export function AssumptionsTab({ meta, assumptions, apiMode }: Props) {
         {meta?.notes?.map((note) => <p className="fine" key={note}>{note}</p>)}
         {meta?.retrieved_at && <p className="fine">Retrieved: {meta.retrieved_at}</p>}
         {meta?.adjustment && <p className="fine">{meta.adjustment}</p>}
+        {meta?.cash_provenance && <p className="callout warn">Cash inputs: {meta.cash_provenance}</p>}
+        {meta && !meta.is_synthetic && !meta.verified && <p className="callout warn">Legacy cache is unverified. Its SHA256 identifies the file; it does not verify market prices or funding rates.</p>}
       </Panel>
 
       <div className="grid-2">

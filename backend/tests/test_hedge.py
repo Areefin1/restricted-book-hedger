@@ -13,7 +13,7 @@ STRATEGIES = ["unhedged", "static_short_hedged", "sjb_hedged"]
 @pytest.fixture
 def prices():
     return pd.DataFrame(
-        {"hyg": [100.0, 90.0, 99.0], "sjb": [50.0, 54.0, 49.5]},
+        {"hyg": [100.0, 90.0, 99.0], "rf_return": 0.0, "sjb": [50.0, 54.0, 49.5]},
         index=pd.DatetimeIndex(["2022-01-07", "2022-01-10", "2022-01-12"], name="date"),
     )
 
@@ -68,7 +68,7 @@ def test_borrow_cost_uses_initial_exposure_and_calendar_days(prices):
 
 def test_pnl_reports_gains_separately_from_total_value():
     rising = pd.DataFrame(
-        {"hyg": [100.0, 110.0], "sjb": [50.0, 46.0]},
+        {"hyg": [100.0, 110.0], "rf_return": 0.0, "sjb": [50.0, 46.0]},
         index=pd.date_range("2022-01-03", periods=2, name="date"),
     )
     results = simulate_hedges(rising, 100_000, 0.5)
@@ -86,7 +86,7 @@ def test_loader_selection_and_simulation_work_together(tmp_path):
         encoding="utf-8",
     )
     selected = select_date_range(load_prices(path), "2022-01-01", "2022-01-04")
-    results = simulate_hedges(selected, 100_000, 0.5)
+    results = simulate_hedges(selected, 100_000, 0.5, annual_cash_rate=0)
     np.testing.assert_allclose(results.iloc[-1], [90_000, 95_000, 94_000, -10_000, -5_000, -6_000])
 
 

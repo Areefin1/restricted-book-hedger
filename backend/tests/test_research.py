@@ -14,7 +14,7 @@ from app.hedger.sanity import run_sanity_check
 def prices():
     returns = np.resize([0.01, -0.02, 0.005, -0.003], 130)
     return pd.DataFrame({"hyg": 100 * np.r_[1, np.cumprod(1 + returns)],
-                         "sjb": 50 * np.r_[1, np.cumprod(1 - returns)]},
+                         "rf_return": 0.0, "sjb": 50 * np.r_[1, np.cumprod(1 - returns)]},
                         index=pd.bdate_range("2022-01-03", periods=131, name="date"))
 
 
@@ -24,7 +24,7 @@ def test_63_intervals_need_64_prices_and_use_only_window_returns(prices):
     assert len(result) == 1
     row = result.iloc[0]
     assert row.hyg_return == pytest.approx(prices.hyg.iloc[63] / prices.hyg.iloc[0] - 1)
-    assert row.hyg_realized_vol == pytest.approx(np.std(prices.hyg.pct_change().dropna().iloc[:63], ddof=1) * np.sqrt(252))
+    assert row.hyg_realized_vol == pytest.approx(np.sqrt(np.mean(prices.hyg.pct_change().dropna().iloc[:63] ** 2)) * np.sqrt(252))
     assert row.start_date == "2022-01-03"
     assert row.end_date == str(prices.index[63].date())
     assert len(calculate_rolling_windows(prices)) == len(prices) - 63

@@ -33,6 +33,10 @@ class RollingWindowPoint(BaseModel):
     hyg_return: FiniteNumber
     sjb_return: FiniteNumber
     hyg_realized_vol: FiniteNumber
+    hyg_total_return: FiniteNumber
+    sjb_total_return: FiniteNumber
+    cash_return: FiniteNumber
+    hyg_sample_vol: FiniteNumber
 
 
 class ConvexityResponse(BaseModel):

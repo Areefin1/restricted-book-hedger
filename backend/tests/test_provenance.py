@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from pathlib import Path
 
 from app.hedger.data import load_prices
 from app.hedger.provenance import cache_metadata
@@ -21,6 +22,8 @@ def test_matching_sidecar_and_changed_prices(tmp_path):
     stale = cache_metadata(path, sidecar, load_prices(path))
     assert stale["retrieved_at"] is None
     assert stale["source"] == "unknown"
+    assert stale["is_synthetic"] is None
+    assert stale["verified"] is False
     assert stale["data_version"] != matched["data_version"]
     assert stale["notes"]
 
@@ -34,3 +37,12 @@ def test_malformed_sidecar_keeps_valid_cache_usable(tmp_path):
     assert result["trading_days"] == 2
     assert result["retrieved_at"] is None
     assert result["notes"]
+
+
+def test_bundled_sidecar_matches_exact_cache_without_claiming_verification():
+    directory = Path(__file__).resolve().parents[1] / 'data'
+    source = json.loads((directory/'metadata.json').read_text())
+    assert source['sha256'] == hashlib.sha256((directory/'prices.csv').read_bytes()).hexdigest()
+    assert source['retrieved_at'] is None
+    assert source['verified'] is False
+    assert 'UNVERIFIED' in source['cash_provenance']

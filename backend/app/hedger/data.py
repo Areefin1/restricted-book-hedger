@@ -28,10 +28,15 @@ def load_prices(csv_path: str | Path) -> pd.DataFrame:
     if "date" not in prices.columns:
         raise ValueError("Price cache is missing the date column")
 
+    cash_columns = [c for c in ("rf_return", "rf_annual_pct") if c in prices.columns]
+    if {"hyg", "sjb", "hyg_adj_close", "sjb_adj_close"}.issubset(prices.columns):
+        for alias, adjusted in (("hyg", "hyg_adj_close"), ("sjb", "sjb_adj_close")):
+            if not np.allclose(pd.to_numeric(prices[alias], errors="coerce"), pd.to_numeric(prices[adjusted], errors="coerce"), rtol=1e-12, atol=0):
+                raise ValueError("Conflicting analytical and adjusted price columns")
     if {"hyg", "sjb"}.issubset(prices.columns):
-        prices = prices.loc[:,["date","hyg","sjb"]].copy()
+        prices = prices.loc[:,["date","hyg","sjb", *cash_columns]].copy()
     elif {"hyg_adj_close", "sjb_adj_close"}.issubset(prices.columns):
-         prices = prices.loc[:, ["date", "hyg_adj_close", "sjb_adj_close"]].rename(
+         prices = prices.loc[:, ["date", "hyg_adj_close", "sjb_adj_close", *cash_columns]].rename(
             columns={"hyg_adj_close": "hyg", "sjb_adj_close": "sjb"}
         )
     else: 
@@ -50,6 +55,13 @@ def load_prices(csv_path: str | Path) -> pd.DataFrame:
         raise ValueError("Prices must be finite")
     if (values <= 0).any().any():
         raise ValueError("Prices must be positive")
+
+    for column in cash_columns:
+        rates = pd.to_numeric(prices[column], errors="coerce")
+        lower = -1 if column == "rf_return" else -100
+        if not np.isfinite(rates.to_numpy()).all() or (rates <= lower).any():
+            raise ValueError(f"{column} must be complete, finite and greater than {lower}")
+        values[column] = rates
 
     values.index = pd.DatetimeIndex(dates, name="date")
     return values.sort_index()
