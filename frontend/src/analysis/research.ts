@@ -21,7 +21,7 @@ export function runSanityCheck(prices: PriceRow[], dataVersion: string): SanityR
     observations: hyg.length,
     notes: [
       'OLS of SJB daily return on HYG daily return over the full history.',
-      'A beta near -1 confirms the daily -1x target. The intercept mixes expenses, tracking error, and noise; it is not an exact fund expense.',
+      'A beta near -1 indicates inverse co-movement with HYG, not exact benchmark replication. The intercept mixes expenses, benchmark differences, tracking error, and noise.',
     ],
     data_version: dataVersion,
   }

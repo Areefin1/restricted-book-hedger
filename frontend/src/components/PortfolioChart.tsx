@@ -6,7 +6,7 @@ import { COLORS, STRATEGY_META, baseLayout } from '../theme'
 import { Plot } from './Plot'
 import { Segmented } from './ui'
 
-type Mode = 'value' | 'return'
+type Mode = 'value' | 'pnl' | 'return'
 
 export function PortfolioChart({ paths, bookSize }: { paths: PathPoint[]; bookSize: number }) {
   const [mode, setMode] = useState<Mode>('value')
@@ -18,9 +18,17 @@ export function PortfolioChart({ paths, bookSize }: { paths: PathPoint[]; bookSi
       mode: 'lines',
       name: STRATEGY_META[k].label,
       x,
-      y: paths.map((p) => (mode === 'value' ? p[k] : (p[k] / bookSize - 1) * 100)),
+      y: paths.map((p) => {
+        if (mode === 'value') return p[k]
+        if (mode === 'pnl') return p[`${k}_pnl`] ?? p[k] - bookSize
+        return (p[k] / bookSize - 1) * 100
+      }),
+      customdata: paths.map((p) => [p[k], p[`${k}_pnl`] ?? p[k] - bookSize, (p[k] / bookSize - 1) * 100]),
       line: { color: STRATEGY_META[k].color, width: k === 'unhedged' ? 1.6 : 2 },
-      hovertemplate: mode === 'value' ? '%{y:$,.0f}<extra>%{fullData.name}</extra>' : '%{y:+.2f}%<extra>%{fullData.name}</extra>',
+      hovertemplate:
+        'Total value: %{customdata[0]:$,.0f}<br>' +
+        'Portfolio P/L: %{customdata[1]:+$,.0f}<br>' +
+        'Return: %{customdata[2]:+.2f}%<extra>%{fullData.name}</extra>',
     }))
   }, [paths, bookSize, mode])
 
@@ -49,7 +57,14 @@ export function PortfolioChart({ paths, bookSize }: { paths: PathPoint[]; bookSi
             ],
           },
         },
-        yaxis: mode === 'value' ? { tickformat: '$,.3s' } : { ticksuffix: '%', zeroline: true, zerolinewidth: 1 },
+        yaxis: mode === 'return'
+          ? { title: { text: 'Return (%)' }, ticksuffix: '%', zeroline: true, zerolinewidth: 1 }
+          : {
+              title: { text: mode === 'value' ? 'Total value ($)' : 'Portfolio P/L ($)' },
+              tickformat: '$,.3s',
+              zeroline: mode === 'pnl',
+              zerolinewidth: 1,
+            },
       }),
     [mode],
   )
@@ -71,12 +86,19 @@ export function PortfolioChart({ paths, bookSize }: { paths: PathPoint[]; bookSi
           value={mode}
           onChange={setMode}
           options={[
-            { value: 'value', label: 'Value ($)' },
+            { value: 'value', label: 'Total value ($)' },
+            { value: 'pnl', label: 'Profit / loss ($)' },
             { value: 'return', label: 'Return (%)' },
           ]}
         />
       </div>
-      <Plot data={data} layout={layout} height={360} ariaLabel="Portfolio value over time for each strategy" />
+      <Plot
+        data={data}
+        layout={layout}
+        height={360}
+        ariaLabel={`${mode === 'value' ? 'Total portfolio value' : mode === 'pnl' ? 'Portfolio profit or loss' : 'Portfolio return'} over time for each strategy`}
+      />
+      <p className="chart-hint">Portfolio profit / loss = total value minus starting capital ({bookSize.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}). Hover to see both amounts.</p>
       <p className="chart-hint">Drag to zoom into a date range; double-click to reset. Range buttons are relative to the last date.</p>
     </div>
   )

@@ -148,8 +148,8 @@ function WindowDecomposition({ req, res }: { req: SimulationRequest; res: Simula
         </span>
       </div>
       <p className="fine">
-        The gap combines compounding from the daily reset, the expense drag embedded in the synthetic SJB series, and tracking
-        noise. This view does not separate those components.
+        The observed gap combines daily compounding, benchmark differences, embedded expenses, and tracking.
+        This view does not separate those components. The static reference excludes borrow costs.
       </p>
     </Panel>
   )
@@ -166,7 +166,7 @@ export function MechanicsTab({ req, res }: { req: SimulationRequest; res: Simula
             <InfoTip text={GLOSSARY.staticShort} label="About static short" />
           </header>
           <ul>
-            <li>Short a fixed number of HYG shares at the start and hold.</li>
+            <li>Model a fixed initial short exposure using negative adjusted HYG returns.</li>
             <li>P/L is exactly −1 × HYG's cumulative move on the hedged notional, before costs.</li>
             <li>Not path dependent: only the start and end prices matter.</li>
             <li>Costs: borrow fee on the short (an explicit input here). Requires the ability to borrow shares.</li>
@@ -181,7 +181,7 @@ export function MechanicsTab({ req, res }: { req: SimulationRequest; res: Simula
           <ul>
             <li>Buy an inverse ETF that targets −1x of the index's return each day.</li>
             <li>Rebalances daily, so multi-day returns compound and depend on the path.</li>
-            <li>Trending markets: compounding can help. Choppy, volatile markets: value decays.</li>
+            <li>Compounding can help in trends or hurt in reversals; observed fund returns also reflect tracking and benchmark differences.</li>
             <li>Costs: fund expenses are inside its price. No borrow needed; financing assumed free here.</li>
           </ul>
         </article>

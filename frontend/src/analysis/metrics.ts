@@ -5,6 +5,11 @@
 
 export const TRADING_DAYS_PER_YEAR = 252
 
+/** Actual calendar days between ISO dates, independent of daylight saving time. */
+export function calendarDays(start: string, end: string): number {
+  return (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000
+}
+
 export interface Drawdown {
   /** Largest fall from a previous peak, as nonnegative percentage points. */
   pct: number

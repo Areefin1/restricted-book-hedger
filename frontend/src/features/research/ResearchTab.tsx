@@ -233,9 +233,8 @@ export function ResearchTab() {
           <div className={convexity.stale ? 'is-stale' : ''}>
             <VolatilityContext data={convexity.data} />
             <p className="fine">
-              Computed on synthetic data, so these averages illustrate the method only. Overlapping windows mean the counts
-              overstate the amount of independent evidence. Draw conclusions only from the cached market data once the
-              backend is connected.
+              Averages use the loaded dataset. Overlapping windows mean the counts overstate the amount of independent
+              evidence. Benchmark differences, expenses, and tracking affect the gap as well as daily resetting.
             </p>
           </div>
         )}

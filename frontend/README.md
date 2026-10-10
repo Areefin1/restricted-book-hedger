@@ -1,75 +1,11 @@
-# React + TypeScript + Vite
+# Restricted Book Hedger frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React, TypeScript, Vite, and Plotly UI for the Python historical hedge API. Run `npm ci`, then `npm run dev` from this directory. Vite serves http://127.0.0.1:5173 and proxies `/api` to http://127.0.0.1:8000. Start the backend using the [root README](../README.md).
 
-Currently, two official plugins are available:
+`npm run build` type-checks and produces `dist/`; `npm run lint` checks the source. For the single-server demo, build with a blank `VITE_API_BASE_URL` and `VITE_USE_MOCK=false`, then run `python scripts/demo.py --skip-build` from the repository root.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The shared API client defaults to real HTTP. Set `VITE_API_BASE_URL` only for a separate API origin. Synthetic data is an explicit UI-development option (`VITE_USE_MOCK=true`), never an error fallback. Restart/rebuild after changing Vite variables. API types mirror [the contract](../docs/api-contract.md); Python is authoritative for simulation, research, and search. Frontend derived metrics are calculated from returned paths.
 
-## React Compiler
+`npm run test:e2e` builds the UI and runs Playwright against a temporary API on port 8765. It checks desktop/mobile navigation, presets, real API results, charts, ratio search, and input recovery. Windows defaults to installed Edge; set `BROWSER_CHANNEL=chrome` for installed Chrome, or use Playwright Chromium on other systems (`npx playwright install chromium`). The Python environment must contain backend dependencies; `HEDGER_PYTHON` can select an interpreter. Screenshots/traces are written to ignored `test-results/`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+The Plotly library loads lazily and remains the largest bundle. No third-party network resource is needed after dependencies and assets have been installed/built.

@@ -25,6 +25,8 @@ dist-ssr/
 build/
 coverage/
 *.tsbuildinfo
+test-results/
+playwright-report/
 
 # Logs and temporary files
 logs/

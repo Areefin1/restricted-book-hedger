@@ -14,7 +14,7 @@ export const GLOSSARY = {
   maxDrawdown:
     'Largest fall from a previous peak to a later trough within the window, shown as a positive loss. Differs from final P/L, which only compares start and end.',
   staticShort:
-    'Short HYG once at the start and hold the share count fixed. Its P/L is exactly the negative of HYG’s move on the hedged notional, before borrow cost.',
+    'Fixed initial short exposure modeled as negative adjusted HYG returns, before calendar-day borrow cost. This is a simplified return-series comparison.',
   sjb: 'SJB is an inverse ETF that targets -1x of the daily return of a high-yield index. It resets every day, so over several days it does not deliver exactly -1x the cumulative return.',
   dailyReset:
     'Because SJB rebalances to -1x every day, multi-day returns compound. In trending markets this can help; in volatile, directionless markets it erodes value (volatility drag).',
@@ -22,7 +22,7 @@ export const GLOSSARY = {
   annVol: 'Annualized standard deviation of the portfolio’s daily returns over the selected window.',
   worstDay: 'Worst single-day portfolio return in the window.',
   hedgePnl: 'Ending value of the hedged portfolio minus ending value of the unhedged portfolio.',
-  beta: 'Slope from regressing SJB daily returns on HYG daily returns. A daily -1x product should be close to -1.',
+  beta: 'Slope from regressing SJB daily returns on HYG daily returns. HYG is a comparison proxy, so a slope near -1 indicates inverse co-movement rather than exact target delivery.',
   intercept:
     'Regression intercept, annualized. It mixes expenses, tracking error, and noise, so it is not an exact fund expense.',
   rSquared: 'Share of SJB daily-return variance explained by HYG daily returns.',

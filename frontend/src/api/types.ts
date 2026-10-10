@@ -1,15 +1,12 @@
 // Frontend types for the Restricted Book Hedger API.
 //
-// docs/api-contract.md is currently empty, so these shapes follow the
-// "Shared contracts" section of docs/team-plan.md (§5). Units follow its
-// conventions:
+// Mirrors docs/api-contract.md. Unit conventions:
 //   - dates are YYYY-MM-DD strings
 //   - currency values are numeric dollars
 //   - request rates/ratios are decimals (0.02 = 2%)
 //   - fields ending in _pct are percentage points (5.0 = 5%)
 //   - drawdown is a nonnegative loss magnitude
 //   - research returns and volatility are decimals
-// Fields marked "proposed" are not in the team plan and need team agreement.
 
 export type IsoDate = string
 
@@ -25,11 +22,15 @@ export interface Metadata {
   last_date: IsoDate
   trading_days: number
   data_version: string
-  /** Proposed: where the price series came from. */
+  /** Description of the source and any provenance limitations. */
   provenance: string
-  /** Proposed: true when the series is synthetic sample data. */
+  /** True only for explicitly synthetic data. */
   is_synthetic: boolean
   features: { recommendation: boolean }
+  retrieved_at?: string | null
+  source?: string
+  adjustment?: string
+  notes?: string[]
 }
 
 // GET /api/scenarios
@@ -38,7 +39,7 @@ export interface Scenario {
   name: string
   start_date: IsoDate
   end_date: IsoDate
-  /** Proposed: how the dates were chosen. */
+  /** How the dates were chosen. */
   rule: string
 }
 
@@ -56,6 +57,10 @@ export interface PathPoint {
   unhedged: number
   static_short_hedged: number
   sjb_hedged: number
+  /** Cumulative portfolio profit/loss in dollars, including modeled costs. */
+  unhedged_pnl: number
+  static_short_hedged_pnl: number
+  sjb_hedged_pnl: number
 }
 
 export interface SummaryRow {
