@@ -1,5 +1,6 @@
 """FastAPI entry point, shared cache lifecycle, CORS, and API errors."""
 
+from email.mime import application
 import logging
 from contextlib import asynccontextmanager
 from http import HTTPStatus
@@ -42,7 +43,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(application: FastAPI):
         # Read local data once per worker, not at import or inside each request.
         try:
-            application.state.prices = load_prices(settings.prices_path)
+            application.state.prices = load_prices()
         except (OSError, ValueError) as exc:
             raise RuntimeError(
                 f"Unable to load price cache at {settings.prices_path}: {exc}"

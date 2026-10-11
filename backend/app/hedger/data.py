@@ -1,96 +1,161 @@
-import csv
+
+import os
 from datetime import date
 from pathlib import Path
 
-import numpy as np 
-import pandas as pd 
+import numpy as np
+import pandas as pd
+import psycopg
+from dotenv import load_dotenv
 
-def load_prices(csv_path: str | Path) -> pd.DataFrame:
-    path = Path(csv_path)
-    if not path.is_file():
-        raise FileNotFoundError(f"Price cache not found: {path}")
 
-    with path.open(encoding="utf-8-sig", newline="") as source:
-        header = next(csv.reader(source), None)
-        if not header:
-            raise ValueError("Price cache is empty")
-        if len(header) != len(set(header)):
-            raise ValueError("Price cache contains duplicate columns")
+# data.py is assumed to be in backend/app/hedger/
+BACKEND_DIR = Path(__file__).resolve().parents[2]
 
-        source.seek(0)
-        try:
-            prices = pd.read_csv(source, dtype={"date":"string"})
-        except (pd.errors.EmptyDataError, pd.errors.ParserError) as exc:
-            raise ValueError("Price cache is empty or contains malformed CSV") from exc
+# Prefer a local .env file; fall back to your existing .env.example setup.
+env_path = BACKEND_DIR / ".env"
+if not env_path.is_file():
+    raise SystemExit("Backend .env file not found")
     
+
+load_dotenv(env_path)
+
+
+def load_prices(
+    start_date: str | date | None = None,
+    end_date: str | date | None = None
+) -> pd.DataFrame:
+    """
+    Load historical prices from TigerData into a pandas DataFrame.
+
+    Returns:
+        DatetimeIndex named 'date'
+        Columns: hyg, sjb, rf_annual_pct
+    """
+
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        raise ValueError("DATABASE_URL is missing from environment variables")
+
+    start = _parse_boundary(start_date, "Start date") if start_date is not None else None
+    end = _parse_boundary(end_date, "End date") if end_date is not None else None
+
+    if start is not None and end is not None and start > end:
+        raise ValueError("Start date must not follow end date")
+
+    query = """
+        SELECT
+            date,
+            hyg_adj_close AS hyg,
+            sjb_adj_close AS sjb,
+            rf_annual_pct
+        FROM prices
+        WHERE (%s::date IS NULL OR date >= %s::date)
+          AND (%s::date IS NULL OR date <= %s::date)
+        ORDER BY date ASC
+    """
+
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                query,
+                (start, start, end, end)
+            )
+            rows = cursor.fetchall()
+            columns = [column.name for column in cursor.description]
+
+    prices = pd.DataFrame(rows, columns=columns)
+
     if prices.empty:
-        raise ValueError("Price cache is empty")
+        raise ValueError("No price data found in TigerData for the selected range")
+
     if "date" not in prices.columns:
-        raise ValueError("Price cache is missing the date column")
+        raise ValueError("Database results are missing the date column")
 
-    cash_columns = [c for c in ("rf_return", "rf_annual_pct") if c in prices.columns]
-    if {"hyg", "sjb", "hyg_adj_close", "sjb_adj_close"}.issubset(prices.columns):
-        for alias, adjusted in (("hyg", "hyg_adj_close"), ("sjb", "sjb_adj_close")):
-            if not np.allclose(pd.to_numeric(prices[alias], errors="coerce"), pd.to_numeric(prices[adjusted], errors="coerce"), rtol=1e-12, atol=0):
-                raise ValueError("Conflicting analytical and adjusted price columns")
-    if {"hyg", "sjb"}.issubset(prices.columns):
-        prices = prices.loc[:,["date","hyg","sjb", *cash_columns]].copy()
-    elif {"hyg_adj_close", "sjb_adj_close"}.issubset(prices.columns):
-         prices = prices.loc[:, ["date", "hyg_adj_close", "sjb_adj_close", *cash_columns]].rename(
-            columns={"hyg_adj_close": "hyg", "sjb_adj_close": "sjb"}
-        )
-    else: 
-        raise ValueError("Price cache requires hyg/sjb or hyg_adj_close/sjb_adj_close columns")
+    dates = pd.to_datetime(prices["date"], errors="coerce")
 
-    dates = pd.to_datetime(prices["date"], format="%Y-%m-%d", errors="coerce")
     if dates.isna().any():
-        raise ValueError("Price cache contains missing or invalid trading dates")
+        raise ValueError("Database contains missing or invalid trading dates")
+
     if dates.duplicated().any():
-        raise ValueError("Price cache contains duplicate trading dates")
+        raise ValueError("Database contains duplicate trading dates")
+
+    if dates.dt.tz is not None:
+        raise ValueError("Trading dates must be timezone-naive")
+
+    if not dates.equals(dates.dt.normalize()):
+        raise ValueError("Trading dates must be calendar dates")
 
     values = prices[["hyg", "sjb"]].apply(pd.to_numeric, errors="coerce")
+
     if values.isna().any().any():
         raise ValueError("Prices must be numeric and complete")
-    if not np.isfinite(values.to_numpy()).all():
+
+    if not np.isfinite(values.to_numpy(dtype=float)).all():
         raise ValueError("Prices must be finite")
+
     if (values <= 0).any().any():
         raise ValueError("Prices must be positive")
 
-    for column in cash_columns:
+    for column in ("rf_annual_pct",):
         rates = pd.to_numeric(prices[column], errors="coerce")
-        lower = -1 if column == "rf_return" else -100
-        if not np.isfinite(rates.to_numpy()).all() or (rates <= lower).any():
-            raise ValueError(f"{column} must be complete, finite and greater than {lower}")
+
+        if not np.isfinite(rates.to_numpy(dtype=float)).all() or (rates <= -100).any():
+            raise ValueError(
+                f"{column} must be complete, finite and greater than -100"
+            )
+
         values[column] = rates
 
     values.index = pd.DatetimeIndex(dates, name="date")
-    return values.sort_index()
-    
 
-def _parse_boundary(value: str | date, label:str) -> pd.Timestamp:
-    if not isinstance(value,(str,date)):
-        raise ValueError(f"{label} must be a valid calendar date (YYYY-MM-DD)")
+    return values.sort_index()
+
+
+def _parse_boundary(value: str | date, label: str) -> pd.Timestamp:
+    if not isinstance(value, (str, date)):
+        raise ValueError(
+            f"{label} must be a valid calendar date (YYYY-MM-DD)"
+        )
 
     try:
-        parsed = pd.to_datetime(value, format="%Y-%m-%d", errors="raise")
+        parsed = pd.to_datetime(
+            value,
+            format="%Y-%m-%d",
+            errors="raise"
+        )
     except (ValueError, TypeError, OverflowError) as exc:
-        raise ValueError(f"{label} must be a valid calendar date (YYYY-MM-DD)") from exc
+        raise ValueError(
+            f"{label} must be a valid calendar date (YYYY-MM-DD)"
+        ) from exc
 
     if pd.isna(parsed) or parsed.tzinfo is not None:
-        raise ValueError(f"{label} must be a valid timezone-naive calendar date")
+        raise ValueError(
+            f"{label} must be a valid timezone-naive calendar date"
+        )
+
     return parsed.normalize()
 
 
-
-def select_date_range(prices: pd.DataFrame, start_date: str | date, end_date: str | date) -> pd.DataFrame:
+def select_date_range(
+    prices: pd.DataFrame,
+    start_date: str | date,
+    end_date: str | date
+) -> pd.DataFrame:
     start = _parse_boundary(start_date, "Start date")
     end = _parse_boundary(end_date, "End date")
+
     if start > end:
         raise ValueError("Start date must not follow end date")
 
-    selected = prices.loc[(prices.index >= start) & (prices.index <= end)]
-    
+    selected = prices.loc[
+        (prices.index >= start) & (prices.index <= end)
+    ]
+
     if len(selected) < 2:
-        raise ValueError("At least two price observations are required in this range")
-    
+        raise ValueError(
+            "At least two price observations are required in this range"
+        )
+
     return selected.copy()
