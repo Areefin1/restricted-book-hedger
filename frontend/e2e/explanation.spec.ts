@@ -106,12 +106,16 @@ test('Chat failures allow retry without duplicate messages', async ({ page }) =>
 test('A mismatched dataset is rejected and reduced motion disables the spinner', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await openChat(page)
+  // Hold the response until the spinner is checked; a fixed delay races the assertion.
+  let release: (() => void) | undefined
+  const held = new Promise<void>(resolve => { release = resolve })
   await page.route('**/api/explanations', async route => {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await held
     await route.fulfill({ json: { explanation: 'Wrong dataset answer.', data_version: 'sha256:changed' } })
   })
   await page.getByRole('button', { name: 'Explain these results', exact: true }).click()
   await expect(page.locator('.chat-spark-active')).toHaveCSS('animation-name', 'none')
+  release?.()
   await expect(page.getByRole('alert')).toHaveText('The dataset changed. Refresh the simulation and try again.')
   await expect(page.getByText('Wrong dataset answer.', { exact: true })).toHaveCount(0)
 })

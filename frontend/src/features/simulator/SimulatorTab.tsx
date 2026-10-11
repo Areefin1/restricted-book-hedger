@@ -1,36 +1,92 @@
-import { useMemo } from 'react'
-import type { SimulationRequest, SimulationResponse } from '../../api/types'
+import { useMemo, type ReactNode } from 'react'
+import type { SimulationRequest, SimulationResponse, StrategyId } from '../../api/types'
 import { strategyRisk, type StrategyRisk } from '../../analysis/derived'
-import { MetricCard, type MetricRow } from '../../components/MetricCard'
 import { PortfolioChart } from '../../components/PortfolioChart'
 import { SummaryTable } from '../../components/SummaryTable'
-import { Panel } from '../../components/ui'
-import { fmtPct, fmtSignedPct, fmtSignedUsd, fmtUsd, fmtUsdCompact, signClass } from '../../format'
+import { fmtPct, fmtSignedPct, fmtSignedUsd, fmtUsd } from '../../format'
 import { GLOSSARY } from '../../glossary'
 import { STRATEGY_META } from '../../theme'
 
-function rowsFor(
-  risks: StrategyRisk[],
-  value: (r: StrategyRisk) => number,
-  fmt: (v: number) => string,
-  opts: { signed?: boolean; lowerIsBetter?: boolean; deltaFmt?: (v: number) => string } = {},
-): MetricRow[] {
-  const base = value(risks[0])
-  return risks.map((r, i) => {
-    const v = value(r)
-    const d = v - base
-    const better = opts.lowerIsBetter ? -d : d
-    return {
-      strategy: r.strategy,
-      value: fmt(v),
-      tone: opts.signed ? (signClass(v) as MetricRow['tone']) : '',
-      delta: i > 0 && opts.deltaFmt ? `${opts.deltaFmt(d)} vs unhedged` : undefined,
-      deltaTone: (signClass(better) as MetricRow['deltaTone']) || '',
-    }
-  })
+const IN_SENTENCE: Record<StrategyId, string> = {
+  unhedged: 'unhedged book',
+  static_short_hedged: 'static short hedge',
+  sjb_hedged: 'SJB hedge',
 }
 
-const ppDelta = (d: number) => `${d >= 0 ? '+' : '-'}${Math.abs(d).toFixed(2)} pp`
+const outcome = (pnl: number) => (pnl < 0 ? `a ${fmtUsd(-pnl)} loss` : `a ${fmtUsd(pnl)} gain`)
+
+/** The one-line takeaway: which strategy finished highest, and by how much. */
+function Verdict({ risks }: { risks: StrategyRisk[] }) {
+  const [u, s, j] = risks
+  const best = risks.reduce((a, b) => (b.finalValue > a.finalValue ? b : a))
+  let headline: string
+  let detail: ReactNode
+
+  if (Math.abs(s.hedgePnl) < 0.5 && Math.abs(j.hedgePnl) < 0.5) {
+    headline = 'All three strategies finished level.'
+    detail = <>Each ended with {outcome(u.finalPnl)}. Raise the hedge ratio to compare the hedges.</>
+  } else if (best.strategy === 'unhedged') {
+    headline = 'Staying unhedged did best in this window.'
+    detail = (
+      <>
+        Unhedged ended with {outcome(u.finalPnl)}. The static short finished {fmtUsd(Math.abs(s.hedgePnl))} {s.hedgePnl < 0 ? 'behind' : 'ahead'} and
+        SJB {fmtUsd(Math.abs(j.hedgePnl))} {j.hedgePnl < 0 ? 'behind' : 'ahead'}.
+      </>
+    )
+  } else {
+    headline = `The ${IN_SENTENCE[best.strategy]} held up best.`
+    detail = (
+      <>
+        It {best.finalPnl < 0 ? <>limited the loss to <b>{fmtUsd(-best.finalPnl)}</b></> : <>finished up <b>{fmtUsd(best.finalPnl)}</b></>}, compared with{' '}
+        <b>{outcome(u.finalPnl)}</b> unhedged — <span className="pos">{fmtUsd(best.hedgePnl)} better</span>.
+      </>
+    )
+  }
+
+  return (
+    <section className="answer" aria-labelledby="answer-title">
+      <h2 id="answer-title">{headline}</h2>
+      <p>{detail}</p>
+    </section>
+  )
+}
+
+/** Strategies ranked by ending value; bar length is the size of the profit or loss. */
+function Comparison({ risks }: { risks: StrategyRisk[] }) {
+  const ranked = [...risks].sort((a, b) => b.finalValue - a.finalValue)
+  const scale = Math.max(...risks.map((r) => Math.abs(r.finalPnl))) || 1
+  return (
+    <ul className="compare" aria-label="Strategy comparison, best first">
+      {ranked.map((r) => {
+        const meta = STRATEGY_META[r.strategy]
+        return (
+          <li key={r.strategy} className={r.strategy === 'unhedged' ? 'baseline' : ''}>
+            <span className="compare-name">
+              <span className="swatch" style={{ background: meta.color }} aria-hidden="true" />
+              {meta.label}
+            </span>
+            <span className="compare-pnl">
+              <span className="num">{fmtSignedUsd(r.finalPnl)}</span>
+              <span className="compare-bar" aria-hidden="true">
+                <span style={{ width: `${(Math.abs(r.finalPnl) / scale) * 100}%`, background: meta.color }} />
+              </span>
+            </span>
+            <dl className="compare-stats">
+              <div>
+                <dt>Return</dt>
+                <dd className="num">{fmtSignedPct(r.returnPct)}</dd>
+              </div>
+              <div>
+                <dt>Max drawdown</dt>
+                <dd className="num">{fmtPct(r.maxDrawdownPct)}</dd>
+              </div>
+            </dl>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
 
 function Observations({ risks }: { risks: StrategyRisk[] }) {
   const [u, s, j] = risks
@@ -49,48 +105,57 @@ function Observations({ risks }: { risks: StrategyRisk[] }) {
   )
 }
 
+function Chevron() {
+  return (
+    <svg className="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+      <path d="M6 3l5 5-5 5" />
+    </svg>
+  )
+}
+
 export function SimulatorTab({ req, res }: { req: SimulationRequest; res: SimulationResponse }) {
   const risks = useMemo(() => strategyRisk(res, req), [res, req])
 
   return (
-    <div className="stack">
-      <div className="metric-grid">
-        <MetricCard
-          title="Ending portfolio value"
-          tip={GLOSSARY.portfolioValue}
-          rows={rowsFor(risks, (r) => r.finalValue, fmtUsdCompact, { deltaFmt: (d) => fmtUsdCompact(d).replace(/^(?!-)/, '+') })}
-          footnote={`Start: ${fmtUsdCompact(req.book_size)}`}
-        />
-        <MetricCard
-          title="Return"
-          tip={GLOSSARY.return}
-          rows={rowsFor(risks, (r) => r.returnPct, (v) => fmtSignedPct(v), { signed: true, deltaFmt: ppDelta })}
-        />
-        <MetricCard
-          title="Profit / loss"
-          tip={GLOSSARY.pnl}
-          rows={rowsFor(risks, (r) => r.finalPnl, fmtSignedUsd, { signed: true })}
-        />
-        <MetricCard
-          title="Maximum drawdown"
-          tip={GLOSSARY.maxDrawdown}
-          rows={rowsFor(risks, (r) => r.maxDrawdownPct, (v) => fmtPct(v), { lowerIsBetter: true, deltaFmt: ppDelta })}
-          footnote="Peak-to-trough loss, shown as a positive number."
-        />
-      </div>
-      <Panel title="Portfolio performance" subtitle="Daily total portfolio value and profit / loss relative to starting capital.">
-        <PortfolioChart paths={res.paths} bookSize={req.book_size} />
-      </Panel>
+    <div className="overview">
+      <Verdict risks={risks} />
+      <Comparison risks={risks} />
 
-      <div className="grid-2-1">
-        <Panel title="Strategy summary" subtitle="Values at the effective end date.">
-          <SummaryTable rows={risks} />
-        </Panel>
-        <Panel title="Observations" subtitle="Generated from the figures on this page.">
-          <Observations risks={risks} />
-          <p className="fine">Describes the selected window and data version. It is not a forecast or a recommendation.</p>
-        </Panel>
-      </div>
+      <section className="chart-section" aria-labelledby="perf-title">
+        <h2 id="perf-title">Portfolio performance</h2>
+        <PortfolioChart paths={res.paths} bookSize={req.book_size} />
+      </section>
+
+      <section className="more" aria-label="More detail">
+        <details>
+          <summary>
+            <span>
+              <span>Full breakdown</span> <span className="more-hint">ending values, hedge P/L</span>
+            </span>
+            <Chevron />
+          </summary>
+          <div className="more-body">
+            <SummaryTable rows={risks} />
+          </div>
+        </details>
+        <details>
+          <summary>
+            <span>What these numbers mean</span>
+            <Chevron />
+          </summary>
+          <div className="more-body">
+            <dl className="definitions">
+              <div><dt>Profit / loss</dt><dd>{GLOSSARY.pnl}</dd></div>
+              <div><dt>Max drawdown</dt><dd>{GLOSSARY.maxDrawdown}</dd></div>
+              <div><dt>Hedge P/L</dt><dd>{GLOSSARY.hedgePnl}</dd></div>
+              <div><dt>SJB</dt><dd>{GLOSSARY.sjb}</dd></div>
+            </dl>
+            <h3 className="subhead">In this window</h3>
+            <Observations risks={risks} />
+            <p className="fine">Generated from the figures above for the selected window and data version. It is not a forecast or a recommendation.</p>
+          </div>
+        </details>
+      </section>
     </div>
   )
 }

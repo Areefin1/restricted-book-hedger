@@ -14,13 +14,14 @@ test('cached-data demo: simulation, presets, risk, mechanics, research, search a
   const result = await (await simulated).json()
   await expect(page.getByRole('heading', { name: 'Hedge simulator', exact: true })).toBeVisible()
   await expect(page.getByText('Results current', { exact: true })).toBeVisible()
-  await expect(page.getByText('Unverified cache', { exact: true })).toHaveCount(2)
+  await expect(page.getByText('Unverified cache', { exact: true })).toHaveCount(1)
   await expect(page.getByText('Synthetic data', { exact: true })).toHaveCount(0)
   await expect(page.locator('.plot-container')).toHaveCount(1)
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: `test-results/overview-${test.info().project.name}.png`, fullPage: true, animations: 'disabled' })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy()
   const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+  await page.getByText('Full breakdown', { exact: true }).click()
   for (const row of result.summary) {
     await expect(page.getByRole('table')).toContainText(usd.format(row.final_pnl))
   }

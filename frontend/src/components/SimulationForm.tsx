@@ -15,7 +15,7 @@ interface Props {
   fields?: { book?: boolean; ratio?: boolean; borrow?: boolean }
 }
 
-function Field({
+export function Field({
   id,
   label,
   tip,
@@ -185,26 +185,34 @@ export function SimulationForm({ form, errors, onChange, scenarios, meta, fields
           </Field>
         )}
       </div>
-      <details>
-        <summary>Research assumptions and stress controls</summary>
-        <p>These are user assumptions, not verified broker quotes or portfolio exposures. Blank cash uses the cache convention; blank capacity leaves liquidity unverified.</p>
-        <div className="sim-form-grid">
-          {([
-            ['cashRatePct', 'Assumed cash rate (%/yr)', 'Blank: cached cash inputs; constant override uses effective annual actual/365.'],
-            ['fundingSpreadPct', 'Funding spread (%/yr)', 'Added continuously to cash funding for SJB.'],
-            ['rebateSpreadPct', 'Short rebate haircut (%/yr)', 'Subtracted continuously from cash credited on short proceeds.'],
-            ['tradingCostBps', 'Round-trip trading cost (bps)', 'Charged once on initial hedge notional after inception.'],
-            ['bookBeta', 'Assumed book beta to HYG', '1 follows HYG; this stress coefficient is not a holdings model.'],
-            ['basisReturnPct', 'Annual basis stress (%)', 'Linear calendar-time return added to the proxy book.'],
-            ['terminationFloorPct', 'Equity floor (% of initial book)', 'Freeze at first closing breach, retaining overshoot; not broker margin or executable liquidation.'],
-            ['hedgeCapacity', 'Assumed hedge capacity ($)', 'User-supplied initial notional limit; no observed ADV or market depth.'],
-          ] as const).map(([key, label, hint]) => (
-            <Field key={key} id={key} label={label} hint={hint} error={errors[key]}>
-              <input id={key} inputMode="decimal" value={form[key]} aria-invalid={!!errors[key]} aria-describedby={`${key}-msg`} onChange={(e) => set({ [key]: e.target.value })} />
-            </Field>
-          ))}
-        </div>
-      </details>
+      <AdvancedFields form={form} errors={errors} onChange={onChange} />
     </form>
+  )
+}
+
+/** Optional research assumptions, collapsed by default. */
+export function AdvancedFields({ form, errors, onChange, className }: { form: SimForm; errors: FormErrors; onChange: (next: SimForm) => void; className?: string }) {
+  const set = (patch: Partial<SimForm>) => onChange({ ...form, ...patch })
+  return (
+    <details className={className}>
+      <summary>Research assumptions and stress controls</summary>
+      <p>These are user assumptions, not verified broker quotes or portfolio exposures. Blank cash uses the cache convention; blank capacity leaves liquidity unverified.</p>
+      <div className="sim-form-grid">
+        {([
+          ['cashRatePct', 'Assumed cash rate (%/yr)', 'Blank: cached cash inputs; constant override uses effective annual actual/365.'],
+          ['fundingSpreadPct', 'Funding spread (%/yr)', 'Added continuously to cash funding for SJB.'],
+          ['rebateSpreadPct', 'Short rebate haircut (%/yr)', 'Subtracted continuously from cash credited on short proceeds.'],
+          ['tradingCostBps', 'Round-trip trading cost (bps)', 'Charged once on initial hedge notional after inception.'],
+          ['bookBeta', 'Assumed book beta to HYG', '1 follows HYG; this stress coefficient is not a holdings model.'],
+          ['basisReturnPct', 'Annual basis stress (%)', 'Linear calendar-time return added to the proxy book.'],
+          ['terminationFloorPct', 'Equity floor (% of initial book)', 'Freeze at first closing breach, retaining overshoot; not broker margin or executable liquidation.'],
+          ['hedgeCapacity', 'Assumed hedge capacity ($)', 'User-supplied initial notional limit; no observed ADV or market depth.'],
+        ] as const).map(([key, label, hint]) => (
+          <Field key={key} id={key} label={label} hint={hint} error={errors[key]}>
+            <input id={key} inputMode="decimal" value={form[key]} aria-invalid={!!errors[key]} aria-describedby={`${key}-msg`} onChange={(e) => set({ [key]: e.target.value })} />
+          </Field>
+        ))}
+      </div>
+    </details>
   )
 }
