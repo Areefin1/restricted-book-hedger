@@ -159,10 +159,7 @@ export default function App() {
             <path d="M8 21l5-6 4 3 7-8" fill="none" stroke="#2ccfb1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M8 11h6" stroke="#5aa9f8" strokeWidth="2.2" strokeLinecap="round" />
           </svg>
-          <div>
-            <span className="brand-name">Restricted Book Hedger</span>
-            <span className="brand-sub">Hedge analytics prototype</span>
-          </div>
+          <span className="brand-name">HedgeLab</span>
         </div>
         <nav className="tabs" aria-label="Primary">
           {ROUTES.map((r) => (
