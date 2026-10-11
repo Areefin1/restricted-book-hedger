@@ -28,46 +28,38 @@ const ICONS: Record<Route, ReactNode> = {
   assumptions: <path d="M6 3h9l4 4v14H6zM15 3v4h4M9 12h7M9 16h7" />,
 }
 
-const PAGES: Record<Route, { nav: string; title: string; subtitle: string; group: 'Analysis' | 'Research' | 'Reference' }> = {
+const PAGES: Record<Route, { nav: string; title: string; subtitle: string }> = {
   simulator: {
     nav: 'Overview',
     title: 'Hedge simulator',
     subtitle: 'Compare an unhedged HYG-proxy book against static short and SJB hedges over a historical window.',
-    group: 'Analysis',
   },
   risk: {
     nav: 'Risk analysis',
     title: 'Risk analysis',
     subtitle: 'Drawdown, volatility, and cost detail for the current simulation.',
-    group: 'Analysis',
   },
   strategies: {
     nav: 'Hedge mechanics',
     title: 'Static short vs. daily-reset inverse ETF',
     subtitle: 'Why SJB does not deliver exactly −1x of HYG over multi-day periods.',
-    group: 'Analysis',
   },
   research: {
     nav: 'Research',
     title: 'Research',
     subtitle: 'Daily sanity check and rolling-window convexity across the full history.',
-    group: 'Research',
   },
   recommendation: {
     nav: 'Recommendation',
     title: 'Hedge ratio search',
     subtitle: 'In-sample historical search against a single stated objective.',
-    group: 'Research',
   },
   assumptions: {
     nav: 'Assumptions',
     title: 'Methodology and assumptions',
     subtitle: 'Data provenance, accounting conventions, and known limitations.',
-    group: 'Reference',
   },
 }
-
-const GROUPS = ['Analysis', 'Research', 'Reference'] as const
 
 function Icon({ route }: { route: Route }) {
   return (
@@ -84,7 +76,6 @@ interface SimResult {
 
 export default function App() {
   const [route, navigate] = useHashRoute(ROUTES, 'simulator')
-  const [navOpen, setNavOpen] = useState(false)
   const [form, setForm] = useState<SimForm>(DEFAULT_FORM)
 
   const meta = useResource('metadata', () => api.getMetadata())
@@ -109,11 +100,6 @@ export default function App() {
   const showControls = usesSimulation || route === 'recommendation'
   const hasErrors = Object.keys(errors).length > 0
   const updating = sim.loading || (request !== null && simKey !== JSON.stringify(request))
-
-  const go = (r: Route) => {
-    navigate(r)
-    setNavOpen(false)
-  }
 
   function renderSimulation(render: (r: SimResult) => ReactNode) {
     if (!sim.data) {
@@ -153,7 +139,7 @@ export default function App() {
           datesValid={searchValidation.request !== null}
           onApply={(ratio) => {
             setForm((f) => ({ ...f, hedgeRatio: String(ratio) }))
-            go('simulator')
+            navigate('simulator')
           }}
         />
       )
@@ -165,8 +151,8 @@ export default function App() {
 
   return (
     <ChatViewProvider page={route}>
-    <div className={`app ${navOpen ? 'nav-open' : ''}`}>
-      <aside className="sidebar" aria-label="Primary">
+    <div className="app">
+      <header className="tabbar">
         <div className="brand">
           <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
             <rect x="1" y="1" width="30" height="30" rx="7" fill="#11283a" stroke="#1f4a5a" />
@@ -178,44 +164,18 @@ export default function App() {
             <span className="brand-sub">Hedge analytics prototype</span>
           </div>
         </div>
-        <nav>
-          {GROUPS.map((g) => (
-            <div key={g} className="nav-group">
-              <span className="nav-group-label">{g}</span>
-              <ul>
-                {ROUTES.filter((r) => PAGES[r].group === g).map((r) => (
-                  <li key={r}>
-                    <a
-                      href={`#/${r}`}
-                      className={route === r ? 'active' : ''}
-                      aria-current={route === r ? 'page' : undefined}
-                      onClick={() => setNavOpen(false)}
-                    >
-                      <Icon route={r} />
-                      {PAGES[r].nav}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+        <nav className="tabs" aria-label="Primary">
+          {ROUTES.map((r) => (
+            <a key={r} href={`#/${r}`} className={route === r ? 'active' : ''} aria-current={route === r ? 'page' : undefined}>
+              <Icon route={r} />
+              {PAGES[r].nav}
+            </a>
           ))}
         </nav>
-      </aside>
-      <button type="button" className="scrim" aria-label="Close navigation" onClick={() => setNavOpen(false)} tabIndex={navOpen ? 0 : -1} />
+      </header>
 
       <div className="main">
         <header className="topbar">
-          <button
-            type="button"
-            className="menu-btn"
-            aria-label="Open navigation"
-            aria-expanded={navOpen}
-            onClick={() => setNavOpen((o) => !o)}
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-              <path d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
-          </button>
           <div className="topbar-title">
             <h1>{page.title}</h1>
             <p>{page.subtitle}</p>

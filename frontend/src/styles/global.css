@@ -106,30 +106,26 @@ code {
 /* ---------- Shell ---------- */
 
 .app {
-  display: grid;
-  grid-template-columns: 236px minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
-.sidebar {
-  position: sticky;
-  top: 0;
-  height: 100vh;
+.tabbar {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 18px 12px 16px;
+  align-items: center;
+  gap: 32px;
+  min-height: 58px;
+  padding: 0 28px;
   background: var(--bg-side);
-  border-right: 1px solid var(--border);
-  overflow-y: auto;
+  border-bottom: 1px solid var(--border);
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 2px 8px 14px;
-  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .brand-name {
   display: block;
@@ -144,55 +140,46 @@ code {
   font-size: 11.5px;
 }
 
-.nav-group + .nav-group {
-  margin-top: 14px;
-}
-.nav-group-label {
-  display: block;
-  padding: 0 10px 6px;
-  font-size: 12px;
-  color: var(--faint);
-}
-.sidebar ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
+.tabs {
+  display: flex;
+  align-self: stretch;
   gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-.sidebar nav a {
+.tabs a {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
+  gap: 8px;
+  padding: 0 14px;
   color: var(--muted);
   text-decoration: none;
   font-weight: 500;
+  white-space: nowrap;
   transition:
     background 0.15s,
     color 0.15s;
 }
-.sidebar nav a:hover {
+.tabs a:hover {
   background: var(--hover);
   color: var(--text-strong);
 }
-.sidebar nav a.active {
-  background: var(--accent-soft);
+.tabs a.active {
   color: var(--text-strong);
 }
-.sidebar nav a.active::before {
+.tabs a.active::after {
   content: '';
   position: absolute;
-  left: -12px;
-  top: 7px;
-  bottom: 7px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
   background: var(--accent);
 }
-.sidebar nav a.active svg {
+.tabs a.active svg {
   color: var(--accent);
 }
 
@@ -245,21 +232,6 @@ code {
   align-items: center;
   gap: 18px;
   flex-shrink: 0;
-}
-.menu-btn {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-strong);
-  background: var(--panel);
-  color: var(--text);
-  cursor: pointer;
-}
-.scrim {
-  display: none;
 }
 
 .status {
@@ -1252,34 +1224,6 @@ th .infotip-body {
 }
 
 @media (max-width: 960px) {
-  .app {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .sidebar {
-    position: fixed;
-    z-index: 50;
-    left: 0;
-    width: 260px;
-    transform: translateX(-100%);
-    transition: transform 0.2s ease;
-  }
-  .app.nav-open .sidebar {
-    transform: none;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
-  }
-  .scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 45;
-    border: 0;
-    background: rgba(3, 7, 12, 0.6);
-  }
-  .app.nav-open .scrim {
-    display: block;
-  }
-  .menu-btn {
-    display: inline-flex;
-  }
   .grid-1-2,
   .grid-2,
   .compare-grid,
@@ -1289,6 +1233,16 @@ th .infotip-body {
 }
 
 @media (max-width: 720px) {
+  .tabbar {
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 10px 16px 0;
+  }
+  .tabs {
+    flex-basis: 100%;
+    height: 44px;
+    margin: 0 -14px;
+  }
   .topbar {
     padding: 10px 16px;
     flex-wrap: wrap;
