@@ -14,11 +14,10 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 # Prefer a local .env file; fall back to your existing .env.example setup.
 env_path = BACKEND_DIR / ".env"
-if not env_path.is_file():
-    raise SystemExit("Backend .env file not found")
+
     
 
-load_dotenv(env_path)
+load_dotenv(env_path,override=False)
 
 
 def load_prices(
