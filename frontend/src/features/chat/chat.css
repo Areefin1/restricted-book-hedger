@@ -1,7 +1,7 @@
 /* ---------- Floating simulation assistant ---------- */
 
 .chat-dock {
-  --chat-warm: #edb394;
+  --chat-warm: #a8c7fa;
   position: fixed;
   z-index: 40;
   right: 24px;
@@ -13,17 +13,17 @@
   gap: 10px;
   margin-left: auto;
   padding: 12px 18px 12px 12px;
-  border: 1px solid #715a4d;
+  border: 1px solid #52668d;
   border-radius: 30px;
-  background: #20242c;
-  color: #f9e4d7;
+  background: #1c2333;
+  color: #e3ecff;
   box-shadow: 0 6px 28px #0006;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: transform .18s ease, border-color .18s ease, background .18s ease;
 }
-.chat-launcher:hover { transform: translateY(-2px); background: #2c2b30; border-color: var(--chat-warm); }
+.chat-launcher:hover { transform: translateY(-2px); background: #25324b; border-color: var(--chat-warm); }
 .chat-launcher-open { background: var(--panel); border-color: var(--border-strong); }
 .chat-spark { width: 30px; height: 30px; flex-shrink: 0; color: var(--chat-warm); }
 .hedge-chat {
@@ -51,12 +51,12 @@
 .chat-scope-note { flex-basis: 100%; color: var(--muted); padding-left: 12px; font-size: 10px; }
 .chat-log { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 20px 18px; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
 .chat-welcome { padding: 5px 2px 10px; }
-.chat-welcome-spark { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: #edb3940c; border: 1px solid #edb39421; margin-bottom: 17px; }
+.chat-welcome-spark { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: #4285f40c; border: 1px solid #4285f421; margin-bottom: 17px; }
 .chat-welcome h3 { margin: 0 0 9px; font-size: 21px; font-weight: 500; letter-spacing: -.6px; color: var(--text-strong); }
 .chat-welcome p { font-size: 12px; color: var(--muted); line-height: 1.7; margin: 0; }
 .chat-suggestions { display: flex; flex-direction: column; gap: 7px; margin-top: 23px; }
 .chat-suggestions button { display: flex; justify-content: space-between; gap: 8px; text-align: left; border: 1px solid var(--border); border-radius: 9px; padding: 11px 12px; background: var(--panel); color: var(--text); font-size: 12px; cursor: pointer; transition: border-color .16s, background .16s; }
-.chat-suggestions button:hover:enabled { border-color: #edb39460; background: #edb39408; }
+.chat-suggestions button:hover:enabled { border-color: #a8c7fa60; background: #a8c7fa08; }
 .chat-suggestions button span { color: var(--chat-warm); }
 .chat-message { margin-bottom: 20px; animation: chat-message-enter .2s ease-out; }
 .chat-message-author { display: block; font-size: 10px; color: var(--muted); margin-bottom: 6px; }
@@ -67,17 +67,18 @@
 .chat-message-user .chat-message-text { border-radius: 12px 12px 3px 12px; background: var(--panel-2); border: 1px solid var(--border); padding: 10px 13px; }
 .chat-thinking { display: flex; align-items: center; gap: 9px; padding: 2px 0 10px; color: var(--chat-warm); font-size: 12px; }
 .chat-thinking .chat-spark { width: 27px; height: 27px; }
-.chat-spark-active { animation: chat-spark-turn 3s linear infinite; }
-.chat-spark-active path { animation: chat-ray-glow 1.5s ease-in-out infinite alternate; }
-.chat-spark-active path:nth-child(3n) { animation-delay: -.5s; }
-.chat-spark-active path:nth-child(3n + 1) { animation-delay: -1s; }
+.chat-spark-active { animation: chat-spark-turn 2.4s cubic-bezier(.4, 0, .2, 1) infinite; transform-origin: center; }
+.chat-shimmer-lines { display: grid; gap: 10px; margin: 8px 0 24px 36px; }
+.chat-shimmer-lines i { display: block; height: 10px; border-radius: 10px; background: linear-gradient(100deg, #243552 15%, #4876ad 40%, #8aaff0 50%, #243552 75%); background-size: 250% 100%; animation: chat-shimmer 1.8s ease-in-out infinite; }
+.chat-shimmer-lines i:nth-child(2) { width: 88%; animation-delay: .12s; }
+.chat-shimmer-lines i:nth-child(3) { width: 62%; animation-delay: .24s; }
 .chat-thinking-dots { display: inline-block; animation: chat-ray-glow 1s ease-in-out infinite alternate; }
 .chat-error { padding: 12px; border: 1px solid #e99e6440; border-radius: 10px; background: #e99e6408; }
 .chat-error p { margin: 0 0 10px; color: var(--chat-warm); font-size: 12px; }
 .chat-error .btn { font-size: 11px; }
 .chat-composer { border-top: 1px solid var(--border); padding: 13px; background: var(--panel); }
 .chat-input-wrap { display: flex; align-items: flex-end; padding: 10px; gap: 8px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--bg); transition: border-color .15s; }
-.chat-input-wrap:focus-within { border-color: #edb39480; }
+.chat-input-wrap:focus-within { border-color: #a8c7fa80; }
 .chat-input-wrap textarea { flex: 1; width: 100%; min-width: 0; resize: none; padding: 1px 0; border: 0; outline: 0; border-radius: 0; box-shadow: none; background: transparent; color: var(--text-strong); font-family: inherit; font-size: 13px; line-height: 1.6; }
 .chat-input-wrap textarea::placeholder { color: var(--faint); }
 .chat-send { display: grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; border: 0; border-radius: 9px; background: var(--chat-warm); color: #25211e; cursor: pointer; transition: opacity .15s; }
@@ -92,7 +93,8 @@
 .chat-dock button:focus-visible { outline: 2px solid var(--chat-warm); outline-offset: 3px; }
 @keyframes chat-enter { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
 @keyframes chat-message-enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
-@keyframes chat-spark-turn { to { transform: rotate(180deg); } }
+@keyframes chat-spark-turn { 0% { transform: rotate(0) scale(.9); } 50% { transform: rotate(180deg) scale(1.08); } 100% { transform: rotate(360deg) scale(.9); } }
+@keyframes chat-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @keyframes chat-ray-glow { from { opacity: .35; } to { opacity: 1; } }
 @media (max-width: 520px) {
   .chat-dock { right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); }

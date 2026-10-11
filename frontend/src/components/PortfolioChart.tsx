@@ -5,11 +5,13 @@ import { STRATEGIES } from '../analysis/derived'
 import { COLORS, STRATEGY_META, baseLayout } from '../theme'
 import { Plot } from './Plot'
 import { Segmented } from './ui'
+import { useChatSettings } from '../features/chat/chatView'
 
 type Mode = 'value' | 'pnl' | 'return'
 
 export function PortfolioChart({ paths, bookSize }: { paths: PathPoint[]; bookSize: number }) {
   const [mode, setMode] = useState<Mode>('value')
+  useChatSettings({ chart_mode: mode })
 
   const data = useMemo<Data[]>(() => {
     const x = paths.map((p) => p.date)
@@ -93,6 +95,7 @@ export function PortfolioChart({ paths, bookSize }: { paths: PathPoint[]; bookSi
         />
       </div>
       <Plot
+        chartId="portfolio"
         data={data}
         layout={layout}
         height={360}

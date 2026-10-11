@@ -88,7 +88,7 @@ GEMINI_API_KEY=your_gemini_api_key
 
 Open **Ask about results** in the bottom-right corner. The backend recomputes the current simulation and sends its summary, assumptions, events, and data metadata to Gemini. The configured model is `gemini-3.1-flash-lite`.
 
-Chat covers the **full simulation period**. Chart zoom and research plots are not sent. Questions, the latest six conversation turns, and simulation context are sent to Google. History stays in browser memory, survives minimizing and navigation, and resets when the simulation or data version changes or the page reloads. AI chat is disabled in synthetic mock mode.
+Chat follows the **active page and visible chart range**, including research window lengths, search instruments, chart units, and zoom/reset controls. The backend reconstructs numerical context from the loaded CSV; zoom slices the original paths without restarting hedge positions or resetting drawdown peaks. Full-period summary cards and research tables remain separately labeled. Questions, the latest six conversation turns, and this context are sent to Google. History stays in browser memory and survives minimizing; it resets when the page, simulation, chart view, settings, or data version changes, or the page reloads. AI chat is disabled in synthetic mock mode. The Gemini-style sparkle and loading shimmer respect reduced-motion preferences.
 
 Development utilities, both of which make live Google API requests:
 

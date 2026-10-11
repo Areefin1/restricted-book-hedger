@@ -11,6 +11,7 @@ import { useResource } from '../../hooks/useResource'
 import { COLORS, baseLayout } from '../../theme'
 import { ConvexityChart } from './ConvexityChart'
 import { DailyReturnChart } from './DailyReturnChart'
+import { useChatResource, useChatSettings } from '../chat/chatView'
 
 function VolatilityContext({ data }: { data: ConvexityResponse }) {
   const buckets = useMemo(() => volatilityBuckets(data.points), [data])
@@ -96,7 +97,7 @@ function VolatilityContext({ data }: { data: ConvexityResponse }) {
           </tbody>
         </table>
       </div>
-      <Plot data={series} layout={layout} height={260} ariaLabel="Rolling realized volatility and SJB gap over time" />
+      <Plot chartId="volatility" data={series} layout={layout} height={260} ariaLabel="Rolling realized volatility and SJB gap over time" />
       <div className="chart-legend-inline">
         <span>
           <i className="swatch line" style={{ background: COLORS.accent }} /> HYG realized vol, left axis
@@ -113,6 +114,8 @@ export function ResearchTab() {
   const [windowDays, setWindowDays] = useState<number>(63)
   const sanity = useResource('sanity', () => api.getSanity())
   const convexity = useResource(`convexity-${windowDays}`, () => api.getConvexity(windowDays))
+  useChatSettings({ window_days: windowDays })
+  useChatResource('research', !!sanity.data && !!convexity.data && !sanity.error && !convexity.error && !convexity.loading && !convexity.stale)
 
   return (
     <div className="stack">
