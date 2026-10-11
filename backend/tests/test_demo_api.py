@@ -96,3 +96,41 @@ def test_bundled_cache_presets_and_reproducible_2022_demo():
             assert client.get("/").status_code == 200
             assert "text/html" in client.get("/").headers["content-type"]
         assert client.get("/api/missing").json()["error"]["code"] == "NOT_FOUND"
+
+
+def test_bundled_research_matches_prices_csv_directly():
+    """Check the chart API against independent arithmetic on the actual CSV."""
+    backend = Path(__file__).resolve().parents[1]
+    path = backend / "data/prices.csv"
+    raw = pd.read_csv(path, parse_dates=["date"]).sort_values("date").reset_index(drop=True)
+    hyg = raw["hyg_adj_close"].to_numpy()
+    sjb = raw["sjb_adj_close"].to_numpy()
+    days = raw.date.diff().dt.days.fillna(0).to_numpy()
+    # The bundled CSV contains legacy annual cash quotes. Use the previous
+    # observation over each actual calendar interval, without the app helper.
+    quotes = raw["rf_annual_pct"].to_numpy() / 100
+    cash = np.expm1(np.log1p(np.r_[quotes[0], quotes[:-1]]) * days / 365)
+    version = "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+    settings = Settings(_env_file=None, prices_path=path, metadata_path=backend / "data/metadata.json")
+    with TestClient(create_app(settings)) as client:
+        for window in (21, 63, 126):
+            response = client.get(f"/api/research/convexity?window_days={window}")
+            assert response.status_code == 200, response.text
+            result = response.json()
+            assert result["data_version"] == version
+            assert len(result["points"]) == len(raw) - window
+            for start in (0, (len(raw) - window) // 2, len(raw) - window - 1):
+                end = start + window
+                point = result["points"][start]
+                interval_cash = cash[start + 1:end + 1]
+                cash_return = np.prod(1 + interval_cash) - 1
+                daily = hyg[start + 1:end + 1] / hyg[start:end] - 1 - interval_cash
+                assert point["start_date"] == str(raw.date.iloc[start].date())
+                assert point["end_date"] == str(raw.date.iloc[end].date())
+                assert point["hyg_total_return"] == pytest.approx(hyg[end] / hyg[start] - 1)
+                assert point["sjb_total_return"] == pytest.approx(sjb[end] / sjb[start] - 1)
+                assert point["cash_return"] == pytest.approx(cash_return)
+                assert point["hyg_return"] == pytest.approx(hyg[end] / hyg[start] - 1 - cash_return)
+                assert point["sjb_return"] == pytest.approx(sjb[end] / sjb[start] - 1 - cash_return)
+                assert point["hyg_realized_vol"] == pytest.approx(np.sqrt(252 * np.mean(daily ** 2)))
+                assert point["hyg_sample_vol"] == pytest.approx(np.std(daily, ddof=1) * np.sqrt(252))
