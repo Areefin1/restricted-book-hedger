@@ -12,7 +12,7 @@
   --text: #c9d3e1;
   --text-strong: #eef3f9;
   --muted: #8392a8;
-  --faint: #5d6b80;
+  --faint: #74849b;
   --accent: #2ccfb1;
   --accent-strong: #4fe0c6;
   --accent-soft: rgba(44, 207, 177, 0.12);
@@ -150,10 +150,7 @@ code {
 .nav-group-label {
   display: block;
   padding: 0 10px 6px;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 12px;
   color: var(--faint);
 }
 .sidebar ul {
@@ -197,22 +194,6 @@ code {
 }
 .sidebar nav a.active svg {
   color: var(--accent);
-}
-
-.sidebar-foot {
-  margin-top: auto;
-  display: grid;
-  gap: 6px;
-  padding: 12px 8px 0;
-  border-top: 1px solid var(--border);
-  font-size: 11.5px;
-  color: var(--faint);
-  justify-items: start;
-}
-
-.sidebar-foot > span:last-child {
-  max-width: 100%;
-  overflow-wrap: anywhere;
 }
 
 .source-row .badge {
@@ -262,7 +243,7 @@ code {
 .topbar-status {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 18px;
   flex-shrink: 0;
 }
 .menu-btn {
@@ -302,6 +283,9 @@ code {
 .status.warn .dot {
   background: var(--warn);
 }
+.status.data.ok .dot {
+  background: var(--accent);
+}
 @keyframes pulse {
   50% {
     opacity: 0.3;
@@ -310,7 +294,6 @@ code {
 
 .content {
   width: 100%;
-  max-width: 1440px;
   padding: 22px 28px 32px;
   display: flex;
   flex-direction: column;
@@ -393,8 +376,10 @@ code {
   flex-wrap: wrap;
 }
 .scenario-picker {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
   min-width: 0;
 }
 .eyebrow {
@@ -434,8 +419,11 @@ code {
   font-weight: 500;
   color: var(--muted);
 }
+.field-note {
+  font-weight: 400;
+  color: var(--faint);
+}
 .field-msg {
-  min-height: 17px;
   font-size: 11.5px;
   color: var(--faint);
 }
@@ -605,11 +593,42 @@ input[type='range'] {
 }
 
 .effective {
-  margin-top: 6px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-  font-size: 12px;
+  margin-left: auto;
+  font-size: 12.5px;
   color: var(--faint);
+}
+.form-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 20px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.form-foot details {
+  flex: 1 1 auto;
+}
+.form-foot details > summary {
+  display: inline-block;
+  font-size: 12.5px;
+  color: var(--accent);
+  list-style: none;
+  cursor: pointer;
+}
+.form-foot details > summary::-webkit-details-marker {
+  display: none;
+}
+.form-foot details > summary::after {
+  content: ' ›';
+}
+.form-foot details[open] > summary {
+  margin-bottom: 10px;
+}
+.form-foot details > p {
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  color: var(--muted);
 }
 
 /* ---------- Tooltip ---------- */
@@ -698,56 +717,52 @@ th .infotip-body {
   gap: 4px;
 }
 .metric-card h3 {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 .metric-card dl {
   margin: 0;
   display: grid;
-  gap: 5px;
 }
 .metric-row {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   gap: 10px;
+  padding: 7px 0;
+}
+.metric-row + .metric-row {
+  border-top: 1px solid var(--border);
 }
 .metric-row dt {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 12.5px;
-  color: var(--muted);
+  font-size: 13px;
+  color: var(--text);
   white-space: nowrap;
 }
 .metric-row dd {
   margin: 0;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  align-items: baseline;
+  gap: 8px;
   text-align: right;
-  line-height: 1.25;
 }
 .metric-row .num {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-strong);
 }
-.metric-row .num.pos {
-  color: var(--pos);
-}
-.metric-row .num.neg {
-  color: var(--neg);
-}
-.metric-row:first-child .num {
-  font-size: 17px;
+.metric-row.baseline dt,
+.metric-row.baseline .num {
+  font-weight: 400;
+  color: var(--muted);
 }
 .delta {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--faint);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -887,11 +902,9 @@ th .infotip-body {
   white-space: nowrap;
 }
 .data-table thead th {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--faint);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
   border-bottom-color: var(--border-strong);
 }
 .data-table tbody th {
@@ -933,7 +946,9 @@ th .infotip-body {
 .data-table td.num.neg {
   color: var(--neg);
 }
-.data-table td.num.muted {
+.data-table td.num.muted,
+.data-table tr.baseline th,
+.data-table tr.baseline td.num {
   color: var(--muted);
 }
 
@@ -1003,10 +1018,6 @@ th .infotip-body {
   color: var(--accent);
   background: var(--accent-soft);
   border-color: var(--accent-border);
-}
-.scenario-note .badge {
-  height: 18px;
-  font-size: 10px;
 }
 
 /* ---------- Content blocks ---------- */

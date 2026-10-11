@@ -12,10 +12,10 @@ export function SummaryTable({ rows, detailed = false }: { rows: StrategyRisk[];
           <tr>
             <th scope="col">Strategy</th>
             <th scope="col" className="r">
-              Total ending value <InfoTip text={GLOSSARY.portfolioValue} label="About total ending value" />
+              Ending value <InfoTip text={GLOSSARY.portfolioValue} label="About ending value" />
             </th>
             <th scope="col" className="r">
-              Portfolio P/L <InfoTip text={GLOSSARY.pnl} label="About portfolio P/L" />
+              Profit / loss <InfoTip text={GLOSSARY.pnl} label="About profit / loss" />
             </th>
             <th scope="col" className="r">Return</th>
             <th scope="col" className="r">
@@ -44,14 +44,14 @@ export function SummaryTable({ rows, detailed = false }: { rows: StrategyRisk[];
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.strategy}>
+            <tr key={r.strategy} className={r.strategy === 'unhedged' ? 'baseline' : ''}>
               <th scope="row">
                 <span className="swatch" style={{ background: STRATEGY_META[r.strategy].color }} aria-hidden="true" />
                 {STRATEGY_META[r.strategy].label}
               </th>
               <td className="r num">{fmtUsd(r.finalValue)}</td>
-              <td className={`r num ${signClass(r.finalPnl)}`}>{fmtSignedUsd(r.finalPnl)}</td>
-              <td className={`r num ${signClass(r.returnPct)}`}>{fmtSignedPct(r.returnPct)}</td>
+              <td className="r num">{fmtSignedUsd(r.finalPnl)}</td>
+              <td className="r num">{fmtSignedPct(r.returnPct)}</td>
               <td className="r num">{fmtPct(r.maxDrawdownPct)}</td>
               {detailed && (
                 <>

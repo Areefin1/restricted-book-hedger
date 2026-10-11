@@ -3,7 +3,7 @@ import { api } from './api/client'
 import type { SimulationRequest, SimulationResponse } from './api/types'
 import { SimulationForm } from './components/SimulationForm'
 import { HedgeChat } from './features/chat/HedgeChat'
-import { Badge, ErrorState, Loading } from './components/ui'
+import { ErrorState, Loading } from './components/ui'
 import { AssumptionsTab } from './features/assumptions/AssumptionsTab'
 import { RecommendationTab } from './features/recommendation/RecommendationTab'
 import { ResearchTab } from './features/research/ResearchTab'
@@ -198,10 +198,6 @@ export default function App() {
             </div>
           ))}
         </nav>
-        <div className="sidebar-foot">
-          <Badge tone={synthetic ? 'warn' : 'accent'}>{dataLabel}</Badge>
-          <span title={meta.data?.data_version}>{meta.data ? `${meta.data.first_date.slice(0, 4)}–${meta.data.last_date.slice(0, 4)} · ${meta.data.data_version.slice(0, 19)}` : '—'}</span>
-        </div>
       </aside>
       <button type="button" className="scrim" aria-label="Close navigation" onClick={() => setNavOpen(false)} tabIndex={navOpen ? 0 : -1} />
 
@@ -229,7 +225,11 @@ export default function App() {
                 {updating ? 'Updating…' : hasErrors ? 'Inputs need attention' : sim.error ? 'Request failed' : sim.data ? 'Results current' : 'Connecting'}
               </span>
             )}
-            <Badge tone={synthetic || !meta.data?.verified ? 'warn' : 'accent'}>{synthetic ? 'Illustrative · not market data' : dataLabel}</Badge>
+            <span className={`status data ${synthetic || !meta.data?.verified ? 'warn' : 'ok'}`} title={meta.data?.data_version}>
+              <span className="dot" aria-hidden="true" />
+              <span>{dataLabel}</span>
+              {meta.data && <span>· {meta.data.first_date.slice(0, 4)}–{meta.data.last_date.slice(0, 4)}</span>}
+            </span>
           </div>
         </header>
 
@@ -245,14 +245,13 @@ export default function App() {
                 scenarios={scenarios.data}
                 meta={meta.data}
                 fields={route === 'recommendation' ? { book: true, borrow: true } : undefined}
+                footer={usesSimulation && sim.data && (
+                  <p className="effective" title={`Data ${sim.data.res.data_version}`}>
+                    {fmtDate(sim.data.res.effective_start_date)} – {fmtDate(sim.data.res.effective_end_date)} · {sim.data.res.paths.length} trading days
+                    {hasErrors && <span className="warn-text"> · showing last valid inputs</span>}
+                  </p>
+                )}
               />
-              {usesSimulation && sim.data && (
-                <p className="effective">
-                  Effective range {fmtDate(sim.data.res.effective_start_date)} – {fmtDate(sim.data.res.effective_end_date)} ·{' '}
-                  {sim.data.res.paths.length} trading days · data {sim.data.res.data_version}
-                  {hasErrors && <span className="warn-text"> · showing last valid inputs</span>}
-                </p>
-              )}
             </section>
           )}
 

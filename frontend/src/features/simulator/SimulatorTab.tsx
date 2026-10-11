@@ -7,38 +7,40 @@ import { SummaryTable } from '../../components/SummaryTable'
 import { Panel } from '../../components/ui'
 import { fmtPct, fmtSignedPct, fmtSignedUsd, fmtUsd, fmtUsdCompact, signClass } from '../../format'
 import { GLOSSARY } from '../../glossary'
-import { STRATEGY_META } from '../../theme'
 
+/** One row per strategy, in the given (best-first) order; unhedged is the muted baseline. */
 function rowsFor(
-  risks: StrategyRisk[],
-  value: (r: StrategyRisk) => number,
-  fmt: (v: number) => string,
-  opts: { signed?: boolean; lowerIsBetter?: boolean; deltaFmt?: (v: number) => string } = {},
+  ranked: StrategyRisk[],
+  value: (r: StrategyRisk) => string,
+  delta?: (r: StrategyRisk) => number,
 ): MetricRow[] {
-  const base = value(risks[0])
-  return risks.map((r, i) => {
-    const v = value(r)
-    const d = v - base
-    const better = opts.lowerIsBetter ? -d : d
+  return ranked.map((r) => {
+    const baseline = r.strategy === 'unhedged'
+    const d = delta && !baseline ? delta(r) : null
     return {
       strategy: r.strategy,
-      value: fmt(v),
-      tone: opts.signed ? (signClass(v) as MetricRow['tone']) : '',
-      delta: i > 0 && opts.deltaFmt ? `${opts.deltaFmt(d)} vs unhedged` : undefined,
-      deltaTone: (signClass(better) as MetricRow['deltaTone']) || '',
+      value: value(r),
+      baseline,
+      delta: d !== null && Math.abs(d) >= 0.5 ? fmtUsdCompact(d).replace(/^(?!-)/, '+') : undefined,
+      deltaTone: d !== null ? (signClass(d) as MetricRow['deltaTone']) : '',
     }
   })
 }
 
-const ppDelta = (d: number) => `${d >= 0 ? '+' : '-'}${Math.abs(d).toFixed(2)} pp`
+const IN_SENTENCE = { static_short_hedged: 'static short hedge', sjb_hedged: 'SJB hedge' } as const
 
-function Observations({ risks }: { risks: StrategyRisk[] }) {
+function Observations({ risks, ranked }: { risks: StrategyRisk[]; ranked: StrategyRisk[] }) {
   const [u, s, j] = risks
+  const best = ranked[0]
+  const level = Math.abs(s.hedgePnl) < 0.5 && Math.abs(j.hedgePnl) < 0.5
   const items = [
-    `Unhedged ${u.returnPct < 0 ? 'lost' : 'gained'} ${fmtPct(Math.abs(u.returnPct))} with a maximum drawdown of ${fmtPct(u.maxDrawdownPct)}.`,
-    `${STRATEGY_META.static_short_hedged.label}: return ${fmtSignedPct(s.returnPct)}, max drawdown ${fmtPct(s.maxDrawdownPct)}.`,
-    `${STRATEGY_META.sjb_hedged.label}: return ${fmtSignedPct(j.returnPct)}, max drawdown ${fmtPct(j.maxDrawdownPct)}.`,
-    `In this window the SJB hedge ${j.finalValue >= s.finalValue ? 'finished ahead of' : 'finished behind'} the static short by ${fmtUsd(Math.abs(j.finalValue - s.finalValue))}.`,
+    level
+      ? 'All three strategies finished level; there is no hedge at this ratio.'
+      : best.strategy === 'unhedged'
+        ? 'Staying unhedged finished best; both hedges cost money in this window.'
+        : `The ${IN_SENTENCE[best.strategy]} finished best, ${fmtUsd(best.hedgePnl)} ahead of unhedged.`,
+    `SJB finished ${fmtUsd(Math.abs(j.finalValue - s.finalValue))} ${j.finalValue >= s.finalValue ? 'ahead of' : 'behind'} the static short.`,
+    `Unhedged fell as much as ${fmtPct(u.maxDrawdownPct, 1)} from its peak.`,
   ]
   return (
     <ul className="observations">
@@ -51,44 +53,31 @@ function Observations({ risks }: { risks: StrategyRisk[] }) {
 
 export function SimulatorTab({ req, res }: { req: SimulationRequest; res: SimulationResponse }) {
   const risks = useMemo(() => strategyRisk(res, req), [res, req])
+  const ranked = useMemo(() => [...risks].sort((a, b) => b.finalValue - a.finalValue), [risks])
 
   return (
     <div className="stack">
       <div className="metric-grid">
-        <MetricCard
-          title="Ending portfolio value"
-          tip={GLOSSARY.portfolioValue}
-          rows={rowsFor(risks, (r) => r.finalValue, fmtUsdCompact, { deltaFmt: (d) => fmtUsdCompact(d).replace(/^(?!-)/, '+') })}
-          footnote={`Start: ${fmtUsdCompact(req.book_size)}`}
-        />
-        <MetricCard
-          title="Return"
-          tip={GLOSSARY.return}
-          rows={rowsFor(risks, (r) => r.returnPct, (v) => fmtSignedPct(v), { signed: true, deltaFmt: ppDelta })}
-        />
+        <MetricCard title="Ending value" tip={GLOSSARY.portfolioValue} rows={rowsFor(ranked, (r) => fmtUsdCompact(r.finalValue))} />
         <MetricCard
           title="Profit / loss"
           tip={GLOSSARY.pnl}
-          rows={rowsFor(risks, (r) => r.finalPnl, fmtSignedUsd, { signed: true })}
+          rows={rowsFor(ranked, (r) => fmtSignedUsd(r.finalPnl), (r) => r.hedgePnl)}
         />
-        <MetricCard
-          title="Maximum drawdown"
-          tip={GLOSSARY.maxDrawdown}
-          rows={rowsFor(risks, (r) => r.maxDrawdownPct, (v) => fmtPct(v), { lowerIsBetter: true, deltaFmt: ppDelta })}
-          footnote="Peak-to-trough loss, shown as a positive number."
-        />
+        <MetricCard title="Return" tip={GLOSSARY.return} rows={rowsFor(ranked, (r) => fmtSignedPct(r.returnPct))} />
+        <MetricCard title="Max drawdown" tip={GLOSSARY.maxDrawdown} rows={rowsFor(ranked, (r) => fmtPct(r.maxDrawdownPct))} />
       </div>
-      <Panel title="Portfolio performance" subtitle="Daily total portfolio value and profit / loss relative to starting capital.">
+      <Panel title="Portfolio performance">
         <PortfolioChart paths={res.paths} bookSize={req.book_size} />
       </Panel>
 
       <div className="grid-2-1">
-        <Panel title="Strategy summary" subtitle="Values at the effective end date.">
-          <SummaryTable rows={risks} />
+        <Panel title="Strategy summary">
+          <SummaryTable rows={ranked} />
         </Panel>
-        <Panel title="Observations" subtitle="Generated from the figures on this page.">
-          <Observations risks={risks} />
-          <p className="fine">Describes the selected window and data version. It is not a forecast or a recommendation.</p>
+        <Panel title="In this window">
+          <Observations risks={risks} ranked={ranked} />
+          <p className="fine">Describes this window only. Not a forecast or a recommendation.</p>
         </Panel>
       </div>
     </div>

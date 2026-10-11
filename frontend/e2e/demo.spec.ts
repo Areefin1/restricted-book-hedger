@@ -14,7 +14,7 @@ test('cached-data demo: simulation, presets, risk, mechanics, research, search a
   const result = await (await simulated).json()
   await expect(page.getByRole('heading', { name: 'Hedge simulator', exact: true })).toBeVisible()
   await expect(page.getByText('Results current', { exact: true })).toBeVisible()
-  await expect(page.getByText('Unverified cache', { exact: true })).toHaveCount(2)
+  await expect(page.getByText('Unverified cache', { exact: true })).toHaveCount(1)
   await expect(page.getByText('Synthetic data', { exact: true })).toHaveCount(0)
   await expect(page.locator('.plot-container')).toHaveCount(1)
   await page.evaluate(() => window.scrollTo(0, 0))
