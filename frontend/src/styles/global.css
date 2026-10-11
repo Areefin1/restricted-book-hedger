@@ -124,15 +124,16 @@ code {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   flex-shrink: 0;
 }
 .brand-name {
   display: block;
   color: var(--text-strong);
-  font-weight: 650;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 19px;
   line-height: 1.2;
+  letter-spacing: -0.015em;
 }
 
 .tabs {
