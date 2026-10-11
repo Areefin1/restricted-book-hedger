@@ -3,6 +3,7 @@ import { api } from './api/client'
 import type { SimulationRequest, SimulationResponse } from './api/types'
 import { SimulationForm } from './components/SimulationForm'
 import { HedgeChat } from './features/chat/HedgeChat'
+import { ChatViewProvider } from './features/chat/ChatViewContext'
 import { Badge, ErrorState, Loading } from './components/ui'
 import { AssumptionsTab } from './features/assumptions/AssumptionsTab'
 import { RecommendationTab } from './features/recommendation/RecommendationTab'
@@ -163,6 +164,7 @@ export default function App() {
   }
 
   return (
+    <ChatViewProvider page={route}>
     <div className={`app ${navOpen ? 'nav-open' : ''}`}>
       <aside className="sidebar" aria-label="Primary">
         <div className="brand">
@@ -267,13 +269,14 @@ export default function App() {
         </main>
       </div>
       <HedgeChat
-        req={sim.data?.req}
+        req={route === 'recommendation' ? searchValidation.request ?? undefined : sim.data?.req}
         dataVersion={sim.data?.res.data_version}
         disabledReason={api.mode === 'mock' ? 'AI chat is unavailable in synthetic mock mode.'
-          : hasErrors ? 'Fix the highlighted simulation inputs to continue.'
-          : sim.error ? 'Refresh the simulation before continuing.'
-          : updating || sim.stale || !sim.data ? 'Waiting for the current simulation…' : ''}
+          : (usesSimulation || route === 'recommendation') && (route === 'recommendation' ? !searchValidation.request : hasErrors) ? 'Fix the highlighted simulation inputs to continue.'
+          : usesSimulation && sim.error ? 'Refresh the simulation before continuing.'
+          : (usesSimulation && (updating || sim.stale)) || !sim.data ? 'Waiting for the current simulation…' : ''}
       />
     </div>
+    </ChatViewProvider>
   )
 }

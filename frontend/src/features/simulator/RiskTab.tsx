@@ -77,7 +77,7 @@ export function RiskTab({ req, res }: { req: SimulationRequest; res: SimulationR
 
       <Panel title="Hedge exposure drift and stress events" subtitle="Initial hedge investments are held; ratios below compare their current return-series notionals with the stressed book, excluding cash accounts.">
         <p>Initial ratio: {req.hedge_ratio.toFixed(2)}. Ending static short / book: {res.exposures.at(-1)?.static_short_ratio?.toFixed(3) ?? 'n/a'}; ending SJB / book: {res.exposures.at(-1)?.sjb_ratio?.toFixed(3) ?? 'n/a'}.</p>
-        <Plot data={(['static_short_ratio', 'sjb_ratio'] as const).map((key) => ({ type: 'scatter', mode: 'lines', name: key === 'sjb_ratio' ? 'SJB / book' : 'Short HYG / book', x: res.exposures.map((p) => p.date), y: res.exposures.map((p) => p[key]), line: { color: key === 'sjb_ratio' ? COLORS.sjb : STRATEGY_META.static_short_hedged.color } }))} layout={baseLayout({ xaxis: { type: 'date' }, yaxis: { title: { text: 'Hedge / book' } } })} height={240} ariaLabel="Hedge exposure drift" />
+        <Plot chartId="exposure" data={(['static_short_ratio', 'sjb_ratio'] as const).map((key) => ({ type: 'scatter', mode: 'lines', name: key === 'sjb_ratio' ? 'SJB / book' : 'Short HYG / book', x: res.exposures.map((p) => p.date), y: res.exposures.map((p) => p[key]), line: { color: key === 'sjb_ratio' ? COLORS.sjb : STRATEGY_META.static_short_hedged.color } }))} layout={baseLayout({ xaxis: { type: 'date' }, yaxis: { title: { text: 'Hedge / book' } } })} height={240} ariaLabel="Hedge exposure drift" />
         {res.events.length ? <ul>{res.events.map((e) => <li key={`${e.strategy}-${e.date}`}>{e.date} · {STRATEGY_META[e.strategy].label}: {e.reason}</li>)}</ul> : <p className="fine">No assumed equity-floor breach. This does not establish compliance with actual broker margin or borrow availability.</p>}
       </Panel>
 
@@ -90,10 +90,10 @@ export function RiskTab({ req, res }: { req: SimulationRequest; res: SimulationR
           }
           subtitle="Distance below each strategy's running high, daily."
         >
-          <Plot data={ddData} layout={ddLayout} height={300} ariaLabel="Drawdown over time for each strategy" />
+          <Plot chartId="drawdown" data={ddData} layout={ddLayout} height={300} ariaLabel="Drawdown over time for each strategy" />
         </Panel>
         <Panel title="Maximum drawdown" subtitle="Largest peak-to-trough loss in the window.">
-          <Plot data={barData} layout={barLayout} height={300} ariaLabel="Maximum drawdown by strategy" />
+          <Plot chartId="max-drawdown" data={barData} layout={barLayout} height={300} ariaLabel="Maximum drawdown by strategy" />
         </Panel>
       </div>
 

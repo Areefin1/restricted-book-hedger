@@ -1,23 +1,33 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { api } from '../../api/client'
-import type { ChatMessage, SimulationRequest } from '../../api/types'
+import type { ChatMessage, ChatView, SimulationRequest } from '../../api/types'
+import { useChatView } from './chatView'
 import './chat.css'
 
 function Spark({ animated = false }: { animated?: boolean }) {
+  const id = useId().replace(/:/g, '')
+  const shape = 'M20 2C22.5 12.8 27.2 17.5 38 20C27.2 22.5 22.5 27.2 20 38C17.5 27.2 12.8 22.5 2 20C12.8 17.5 17.5 12.8 20 2Z'
   return (
     <svg className={`chat-spark ${animated ? 'chat-spark-active' : ''}`} viewBox="0 0 40 40" fill="none" aria-hidden="true">
-      {Array.from({ length: 12 }, (_, i) => (
-        <path key={i} d="M20 5v8" transform={`rotate(${i * 30} 20 20)`} stroke="currentColor" strokeWidth="3.3" strokeLinecap="round" />
-      ))}
+      <defs>
+        {([['red', '50%', '0%', '#f45b5b'], ['yellow', '0%', '50%', '#fbbc05'], ['green', '50%', '100%', '#34a853']] as const).map(([name, cx, cy, color]) => (
+          <radialGradient key={name} id={`${id}-${name}`} cx={cx} cy={cy} r="70%">
+            <stop stopColor={color} /><stop offset="1" stopColor={color} stopOpacity="0" />
+          </radialGradient>
+        ))}
+      </defs>
+      <path d={shape} fill="#4285f4" />
+      {['green', 'yellow', 'red'].map(color => <path key={color} d={shape} fill={`url(#${id}-${color})`} />)}
     </svg>
   )
 }
 
 const SUGGESTIONS = ['Explain these results', 'Why do the hedges differ?', 'What does drawdown mean?']
 
-function Conversation({ req, dataVersion, disabledReason, open }: {
+function Conversation({ req, dataVersion, view, disabledReason, open }: {
   req: SimulationRequest
   dataVersion: string
+  view?: ChatView
   disabledReason: string
   open: boolean
 }) {
@@ -36,7 +46,7 @@ function Conversation({ req, dataVersion, disabledReason, open }: {
   }, [open])
 
   useEffect(() => {
-    if (open && log.current) log.current.scrollTop = log.current.scrollHeight
+    if (open && log.current) log.current.scrollTop = messages.length || pending || error ? log.current.scrollHeight : 0
   }, [messages, pending, error, open])
 
   async function send(rawQuestion: string) {
@@ -48,7 +58,7 @@ function Conversation({ req, dataVersion, disabledReason, open }: {
     setFailed('')
     setError('')
     try {
-      const result = await api.getExplanation({ ...req, question, history: messages.slice(-12) })
+      const result = await api.getExplanation({ ...req, view: view ? { ...view, data_version: dataVersion } : undefined, question, history: messages.slice(-12) })
       if (result.data_version !== dataVersion) {
         throw new Error('The dataset changed. Refresh the simulation and try again.')
       }
@@ -70,15 +80,23 @@ function Conversation({ req, dataVersion, disabledReason, open }: {
     <>
       <div className="chat-scope">
         <span className="chat-scope-dot" />
-        <span>{req.start_date} to {req.end_date} · {(req.hedge_ratio * 100).toFixed(0)}% hedge</span>
-        <span className="chat-scope-note">Full simulation · chart zoom is not included</span>
+        <span>{view?.page === 'research' ? `Research · ${view.window_days} trading-day windows`
+          : view?.page === 'recommendation' ? `Hedge search · ${view.instrument === 'sjb' ? 'SJB' : 'Static short'} · ${view.window_days}d`
+          : `${PAGE_LABELS[view?.page ?? 'simulator']} · ${(req.hedge_ratio * 100).toFixed(0)}% hedge`}</span>
+        <span className="chat-scope-note">{view?.charts.some(chart => chart.x_range || chart.y_range || chart.y2_range)
+          ? view.charts.filter(chart => chart.x_range || chart.y_range || chart.y2_range).map(chart => {
+            const dates = ['portfolio', 'drawdown', 'exposure', 'mechanics', 'volatility'].includes(chart.chart) ? chart.x_range : undefined
+            return dates ? `Visible ${chart.chart}: ${String(dates[0]).slice(0, 10)} to ${String(dates[1]).slice(0, 10)}` : `${chart.chart}: zoomed axes`
+          }).join(' · ')
+          : view?.page === 'research' ? 'Full CSV history · current chart settings'
+          : `${req.start_date} to ${req.end_date} · full chart range`}</span>
       </div>
       <div className="chat-log" role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions text" ref={log}>
         {messages.length === 0 && !pending && !failed && (
           <div className="chat-welcome">
             <div className="chat-welcome-spark"><Spark /></div>
             <h3>Make sense of your hedge.</h3>
-            <p>Explore the results, compare strategies, or ask about the assumptions behind the numbers.</p>
+            <p>Ask about this page. I’ll use its current settings and the chart range you’re viewing.</p>
             <div className="chat-suggestions">
               {SUGGESTIONS.map(question => (
                 <button type="button" key={question} disabled={!!disabledReason} onClick={() => void send(question)}>
@@ -101,8 +119,9 @@ function Conversation({ req, dataVersion, disabledReason, open }: {
           </div>
         )}
         {pending && (
-          <div className="chat-thinking" role="status">
-            <Spark animated /><span>Thinking<span className="chat-thinking-dots">…</span></span>
+          <div className="chat-loading-response">
+            <div className="chat-thinking" role="status"><Spark animated /><span>Thinking<span className="chat-thinking-dots">…</span></span></div>
+            <div className="chat-shimmer-lines" aria-hidden="true"><i /><i /><i /></div>
           </div>
         )}
         {error && (
@@ -115,9 +134,9 @@ function Conversation({ req, dataVersion, disabledReason, open }: {
       <form className="chat-composer" onSubmit={event => { event.preventDefault(); void send(draft) }}>
         {disabledReason && <p className="chat-disabled" role="status">{disabledReason}</p>}
         <div className="chat-input-wrap">
-          <label className="chat-sr-only" htmlFor="hedge-chat-question">Ask about your simulation</label>
+          <label className="chat-sr-only" htmlFor="hedge-chat-question">Ask about this page</label>
           <textarea id="hedge-chat-question" ref={input} rows={2} maxLength={2000} value={draft}
-            placeholder="Ask about your simulation…" disabled={!!disabledReason}
+            placeholder="Ask about this page…" disabled={!!disabledReason}
             onChange={event => setDraft(event.target.value)}
             onKeyDown={event => {
               if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
@@ -146,6 +165,9 @@ export function HedgeChat({ req, dataVersion, disabledReason }: {
   disabledReason: string
 }) {
   const [open, setOpen] = useState(false)
+  const context = useChatView()
+  const view = context?.view
+  const reason = disabledReason || (context && !context.ready ? 'Waiting for the current page results…' : '')
   const launcher = useRef<HTMLButtonElement>(null)
   function close() { setOpen(false); launcher.current?.focus() }
 
@@ -154,13 +176,13 @@ export function HedgeChat({ req, dataVersion, disabledReason }: {
       <section id="hedge-chat" className="hedge-chat" role="dialog" aria-labelledby="hedge-chat-title" hidden={!open}>
         <header className="chat-header">
           <Spark />
-          <div><h2 id="hedge-chat-title">Hedge assistant</h2><p>Questions meet calculations.</p></div>
+          <div><h2 id="hedge-chat-title">Hedge assistant</h2><p>Powered by Gemini · grounded in your view</p></div>
           <button type="button" className="chat-minimize" onClick={close} aria-label="Minimize chat">
             <svg viewBox="0 0 20 20" width="20" height="20" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M5 10h10" /></svg>
           </button>
         </header>
         {req && dataVersion ? (
-          <Conversation key={JSON.stringify([req, dataVersion])} req={req} dataVersion={dataVersion} disabledReason={disabledReason} open={open} />
+          <Conversation key={JSON.stringify([req, dataVersion, view])} req={req} dataVersion={dataVersion} view={view} disabledReason={reason} open={open} />
         ) : <p className="chat-empty" role="status">{disabledReason || 'Run a simulation to start chatting.'}</p>}
       </section>
       <button type="button" className={`chat-launcher ${open ? 'chat-launcher-open' : ''}`} ref={launcher}
@@ -171,3 +193,5 @@ export function HedgeChat({ req, dataVersion, disabledReason }: {
     </div>
   )
 }
+
+const PAGE_LABELS = { simulator: 'Overview', risk: 'Risk analysis', strategies: 'Hedge mechanics', research: 'Research', recommendation: 'Hedge search', assumptions: 'Assumptions' }

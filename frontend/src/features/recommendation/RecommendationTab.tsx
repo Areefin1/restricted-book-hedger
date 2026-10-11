@@ -9,6 +9,7 @@ import { fmtDate, fmtSignedPct, signClass } from '../../format'
 import { GLOSSARY } from '../../glossary'
 import { useDebounced, useResource } from '../../hooks/useResource'
 import { COLORS, STRATEGY_META, baseLayout } from '../../theme'
+import { useChatResource, useChatSettings } from '../chat/chatView'
 
 const INSTRUMENT_LABEL: Record<HedgeInstrument, string> = {
   sjb: STRATEGY_META.sjb_hedged.label,
@@ -75,7 +76,7 @@ function GridChart({ rec }: { rec: RecommendationResponse }) {
     [],
   )
 
-  return <Plot data={data} layout={layout} height={320} ariaLabel="Worst, median and best rolling-window return by hedge ratio" />
+  return <Plot chartId="ratio-search" data={data} layout={layout} height={320} ariaLabel="Worst, median and best rolling-window return by hedge ratio" />
 }
 
 interface Props {
@@ -102,6 +103,8 @@ export function RecommendationTab({ startDate, endDate, annualBorrowRate, datesV
   const key = useDebounced(datesValid ? JSON.stringify(req) : null, 250)
   const rec = useResource(key, () => api.getRecommendation(JSON.parse(key as string) as RecommendationRequest))
   const updating = rec.stale || rec.loading || key !== JSON.stringify(req) || !datesValid
+  useChatSettings({ window_days: windowDays, instrument })
+  useChatResource('recommendation', !!rec.data && !rec.error && !updating)
 
   const tradeoffRows = useMemo(() => {
     if (!rec.data) return []

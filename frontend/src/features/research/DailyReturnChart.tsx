@@ -56,5 +56,5 @@ export function DailyReturnChart({ sanity }: { sanity: SanityResponse }) {
     [],
   )
 
-  return <Plot data={data} layout={layout} height={320} ariaLabel="Scatter of SJB daily excess returns against HYG daily excess returns" />
+  return <Plot chartId="daily" data={data} layout={layout} height={320} ariaLabel="Scatter of SJB daily excess returns against HYG daily excess returns" />
 }
