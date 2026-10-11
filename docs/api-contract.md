@@ -96,6 +96,14 @@ Strategy IDs are `unhedged`, `static_short_hedged`, and `sjb_hedged`. Each total
 
 The response contains `instrument`, `window_days`, `objective`, `recommended_ratio`, `objective_value_pct`, `grid`, `windows_evaluated`, `in_sample`, `effective_start_date`, `effective_end_date`, `assumptions`, and `data_version`. Each of up to 21 grid rows contains `{hedge_ratio, worst_window_return_pct, median_window_return_pct, best_window_return_pct}`. Ratios run from 0 to 1 in 0.05 increments; capacity-infeasible ratios are omitted. The objective maximizes the worst ending portfolio return; numerical ties within 1e-9 percentage points favor the smaller ratio. `in_sample` is true. Each window starts fresh and uses the same cash, funding, costs, proxy stress and equity cutoff as simulation.
 
+## Chat and explanations
+
+`POST /explanations` accepts simulation inputs plus optional `question` (1–2,000 characters), `history` (up to 12 user/assistant messages, each 1–12,000 characters), and `view`. Responses contain `{explanation, data_version}`. Requests without `view` retain the full-period simulation explanation behavior.
+
+`view` accepts `page` (`simulator`, `risk`, `strategies`, `research`, `recommendation`, `assumptions`), `window_days` (21/63/126), `instrument` (`sjb`/`static_short`), `chart_mode` (`value`/`pnl`/`return`), `example` (`choppy`/`down`/`up`), optional `data_version`, and up to nine `charts`. Each chart has a known `chart` identifier, optional two-element `x_range`, `y_range`, and `y2_range`, and bounded `hidden_series` names. Axis values are finite numbers or bounded strings; date axes accept Plotly date strings or epoch milliseconds. Omitted ranges mean the complete chart. Research scatter axes are percentage returns, not dates; volatility dates refer to rolling-window ends.
+
+The server reconstructs chart values from the worker's CSV-backed simulation/research data and selected controls. Client numerical results are rejected. Visible-date metrics preserve original positions, costs and drawdown peaks; zoom never starts a new simulation. Full-period summaries, search objectives and research tables are labeled separately from chart subsets. Empty subsets contain no invented zero returns. Stale data versions return HTTP 409 `STALE_DATA`; invalid chart bounds return HTTP 422 `INVALID_VIEW`. Missing Gemini configuration returns 503 `AI_NOT_CONFIGURED`; provider failures return 502 `AI_UNAVAILABLE`.
+
 ## Errors and lifecycle
 
 Errors use `{"error":{"code":"INVALID_RANGE","message":"..."}}`.

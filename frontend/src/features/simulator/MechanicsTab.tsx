@@ -8,9 +8,11 @@ import { EmptyState, InfoTip, Panel, Segmented } from '../../components/ui'
 import { fmtDecPct, fmtSignedDecPct, signClass } from '../../format'
 import { GLOSSARY } from '../../glossary'
 import { COLORS, STRATEGY_META, baseLayout } from '../../theme'
+import { useChatSettings } from '../chat/chatView'
 
 function WorkedExample() {
   const [id, setId] = useState<ExampleId>('choppy')
+  useChatSettings({ example: id })
   const ex = EXAMPLES[id]
   const rows = resetExample([...ex.returns])
   const last = rows[rows.length - 1]
@@ -135,7 +137,7 @@ function WindowDecomposition({ req, res }: { req: SimulationRequest; res: Simula
           <span className="stat-value num">{fmtDecPct(vol)}</span>
         </div>
       </div>
-      <Plot data={data} layout={layout} height={300} ariaLabel="Cumulative HYG, static short reference, and SJB returns" />
+      <Plot chartId="mechanics" data={data} layout={layout} height={300} ariaLabel="Cumulative HYG, static short reference, and SJB returns" />
       <div className="chart-legend-inline">
         <span>
           <i className="swatch line" style={{ background: COLORS.unhedged }} /> HYG

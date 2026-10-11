@@ -182,6 +182,26 @@ export interface ChatMessage {
 export interface ExplanationRequest extends SimulationRequest {
   question?: string
   history?: ChatMessage[]
+  view?: ChatView
+}
+
+export type ChatPage = 'simulator' | 'risk' | 'strategies' | 'research' | 'recommendation' | 'assumptions'
+export type ChartId = 'portfolio' | 'drawdown' | 'exposure' | 'max-drawdown' | 'mechanics' | 'daily' | 'convexity' | 'volatility' | 'ratio-search'
+export interface ChartViewport {
+  chart: ChartId
+  x_range?: [string | number, string | number]
+  y_range?: [string | number, string | number]
+  y2_range?: [string | number, string | number]
+  hidden_series?: string[]
+}
+export interface ChatView {
+  page: ChatPage
+  window_days: number
+  instrument: HedgeInstrument
+  chart_mode: 'value' | 'pnl' | 'return'
+  example: 'choppy' | 'down' | 'up'
+  charts: ChartViewport[]
+  data_version?: string
 }
 
 export interface ExplanationResponse {
